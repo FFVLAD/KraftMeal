@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>- MalvorX -</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            scroll-behavior: smooth;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px 40px;
+            box-sizing: border-box;
+            z-index: 1000;
+            border-bottom: 1px solid #f2f2f2;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-links a, .auth-links a, .auth-links button {
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: #000000;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .nav-links a.active {
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+        }
+
+        .logo {
+            font-size: 24px;
+            letter-spacing: 7px;
+            font-weight: bold;
+            text-transform: uppercase;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .logo a {
+            color: #000000;
+            text-decoration: none;
+        }
+
+        .auth-links {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .cart-toggle-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            outline: none;
+            padding: 0;
+        }
+
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .search-input {
+            border: none;
+            border-bottom: 1px solid #000;
+            font-size: 11px;
+            padding: 2px 0;
+            outline: none;
+            width: 0;
+            transition: width 0.3s ease;
+            text-transform: uppercase;
+        }
+        .search-input.open {
+            width: 120px;
+        }
+
+
+        .search-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+
+            color: #000000;
+            transition: color 0.2s ease;
+            outline: none;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+        }
+
+
+        .search-btn:hover {
+            color: #777777;
+        }
+
+
+        .search-icon-text {
+            font-size: 16px;
+            font-weight: lighter;
+        }
+
+        .main-content {
+            flex: 1;
+        }
+
+        .hero-section {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #ffffff;
+        }
+
+        .scroll-hint {
+            font-size: 11px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: #999999;
+            animation: pulse 2.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        .catalog-section {
+            padding: 100px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 50px 30px;
+        }
+
+        .product-card {
+            position: relative;
+            text-align: center;
+        }
+
+        .product-link {
+            text-decoration: none;
+            color: #000000;
+            display: block;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 550px;
+            object-fit: cover;
+            background-color: #fbfbfb;
+        }
+
+        .product-info {
+            margin-top: 15px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .product-price {
+            margin-top: 5px;
+            color: #666666;
+        }
+
+        .star-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 26px;
+            cursor: pointer;
+            color: #e0e0e0;
+            transition: color 0.2s, transform 0.1s;
+            z-index: 10;
+            outline: none;
+        }
+
+        .star-btn.active {
+            color: #000000;
+        }
+
+
+        .cart-sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 350px;
+            height: 100vh;
+            background-color: #ffffff;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.05);
+            z-index: 2000;
+            transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            padding: 40px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cart-sidebar.open { right: 0; }
+        .cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+        .cart-header h3 { margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 3px; }
+        .close-cart-btn { background: none; border: none; font-size: 20px; cursor: pointer; }
+        .cart-items-container { flex: 1; overflow-y: auto; }
+        .cart-item { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #f2f2f2; }
+        .cart-item-img { width: 60px; height: 80px; object-fit: cover; }
+        .cart-item-details { flex: 1; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+        .cart-item-price { margin-top: 5px; color: #666666; }
+        .remove-item-btn { background: none; border: none; color: #999; cursor: pointer; font-size: 11px; text-transform: uppercase; }
+        .cart-footer { border-top: 1px solid #000; padding-top: 20px; margin-top: 10px; }
+        .cart-total-line { display: flex; justify-content: space-between; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; }
+        .cart-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.1); z-index: 1900; display: none; }
+        .cart-overlay.show { display: block; }
+
+        footer {
+            border-top: 1px solid #f2f2f2;
+            padding: 40px;
+            background-color: #ffffff;
+            text-align: center;
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #555555;
+            line-height: 1.8;
+        }
+        footer a {
+            color: #000000;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="nav-links">
+            <a href="{% url 'index' %}" class="{% if not current_gender %}active{% endif %}">Novedades</a>
+            <a href="{% url 'index' %}?gender=Mujer" class="{% if current_gender == 'Mujer' %}active{% endif %}">Mujer</a>
+            <a href="{% url 'index' %}?gender=Hombre" class="{% if current_gender == 'Hombre' %}active{% endif %}">Hombre</a>
+        </div>
+
+        <div class="logo"><a href="{% url 'index' %}">MalvorX</a></div>
+
+        <div class="auth-links">
+            {% if user.is_authenticated %}
+                <span>Hola, {{ user.username }}</span>
+                <button class="cart-toggle-btn" onclick="toggleSidebar(true)">Cesta</button>
+                {% if user.is_staff %}
+                    <a href="/admin/" target="_blank" style="color: #c9302c;">Panel Admin</a>
+                {% endif %}
+                <a href="{% url 'logout' %}" style="color: #777;">Cerrar Sesión</a>
+            {% else %}
+                <a href="{% url 'login' %}">Iniciar Sesión</a>
+                <a href="{% url 'register' %}">Registrarse</a>
+            {% endif %}
+
+            <form method="get" action="{% url 'index' %}" class="search-container">
+                {% if current_gender %}
+                    <input type="hidden" name="gender" value="{{ current_gender }}">
+                {% endif %}
+                <input type="text" name="q" id="searchInput" class="search-input {% if current_search %}open{% endif %}" value="{{ current_search }}" placeholder="Buscar...">
+                <button type="button" class="search-btn" onclick="handleSearchClick()">
+                    <span class="search-icon-text">&#9906;</span>
+                </button>
+            </form>
+        </div>
+    </header>
+
+    <div class="cart-overlay" id="cartOverlay" onclick="toggleSidebar(false)"></div>
+
+    <div class="cart-sidebar" id="cartSidebar">
+        <div class="cart-header">
+            <h3>Mi Cesta</h3>
+            <button class="close-cart-btn" onclick="toggleSidebar(false)">✕</button>
+        </div>
+        <div class="cart-items-container" id="cartItemsContainer">
+            {% for item in cart_items %}
+            <div class="cart-item" id="sidebar-item-{{ item.id }}">
+                <img class="cart-item-img" src="{{ item.image_url }}">
+                <div class="cart-item-details">
+                    <div>{{ item.title }}</div>
+                    <div class="cart-item-price">{{ item.price }} USD</div>
+                    <button class="remove-item-btn" onclick="toggleCart(null, {{ item.id }})">Eliminar</button>
+                </div>
+            </div>
+            {% empty %}
+            <p id="emptyCartMessage" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #999; text-align: center; margin-top: 40px;">Tu cesta está vacía</p>
+            {% endfor %}
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total-line">
+                <span>Total:</span>
+                <span><span id="cartTotalValue">{{ cart_total }}</span> USD</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        {% if not current_search %}
+        <section class="hero-section">
+            <div class="scroll-hint">Desplace hacia abajo para ver la colección ↓</div>
+        </section>
+        {% endif %}
+
+        <section class="catalog-section">
+            <div class="products-grid">
+                {% for product in products %}
+                <div class="product-card">
+                    <button id="catalog-star-{{ product.id }}" class="star-btn {% if product.id in user_cart_ids %}active{% endif %}"
+                            onclick="toggleCart(this, {{ product.id }}, '{{ product.title }}', '{{ product.price }}', '{{ product.image_url }}')">★</button>
+
+                    <a href="{% url 'product_detail' product.id %}" class="product-link">
+                        <img class="product-image" src="{{ product.image_url }}" alt="{{ product.title }}">
+                        <div class="product-info">
+                            <div>{{ product.title }}</div>
+                            <div class="product-price">{{ product.price }} USD</div>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <p style="grid-column: 1/-1; text-align: center; letter-spacing: 2px; color: #999; font-size: 12px; text-transform: uppercase;">
+                    No se han encontrado artículos.
+                </p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div>Si ha elegido un artículo y desea adquirirlo, o si el artículo que busca no está en el sitio web, puede ponerse en contacto con nosotros a través de Telegram: <a href="https://t.me/Lucsgoglv" target="_blank">@Lucsgoglv</a> o <a href="https://t.me/futa1o" target="_blank">@futa1o</a>.</div>
+        <div style="color: #999999; margin-top: 8px; font-size: 9px;">Si nota algún problema técnico, por favor infórmenos.</div>
+    </footer>
+
+    <script>
+        function toggleSidebar(open) {
+            const sidebar = document.getElementById('cartSidebar');
+            const overlay = document.getElementById('cartOverlay');
+            if (sidebar && overlay) {
+                if (open) { sidebar.classList.add('open'); overlay.classList.add('show'); }
+                else { sidebar.classList.remove('open'); overlay.classList.remove('show'); }
+            }
+        }
+
+        function handleSearchClick() {
+            const input = document.getElementById('searchInput');
+            if (input.classList.contains('open')) {
+                if (input.value.trim() !== '') { input.form.submit(); }
+                else { input.classList.remove('open'); }
+            } else { input.classList.add('open'); input.focus(); }
+        }
+
+        function toggleCart(starElement, productId, title, price, imageUrl) {
+            {% if not user.is_authenticated %}
+                alert("Por favor, inicie sesión para añadir productos a la cesta.");
+                window.location.href = "{% url 'login' %}";
+                return;
+            {% endif %}
+
+            if (!starElement) { starElement = document.getElementById(`catalog-star-${productId}`); }
+
+            fetch(`/api/cart/toggle/${productId}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('cartItemsContainer');
+                const totalElement = document.getElementById('cartTotalValue');
+                let currentTotal = parseFloat(totalElement.innerText);
+                let itemPrice = parseFloat(price) || 0;
+
+                if (data.status === 'added') {
+                    if(starElement) starElement.classList.add('active');
+                    const emptyMsg = document.getElementById('emptyCartMessage');
+                    if(emptyMsg) emptyMsg.remove();
+
+                    const itemHtml = `
+                        <div class="cart-item" id="sidebar-item-${productId}">
+                            <img class="cart-item-img" src="${imageUrl}">
+                            <div class="cart-item-details">
+                                <div>${title}</div>
+                                <div class="cart-item-price">${price} USD</div>
+                                <button class="remove-item-btn" onclick="toggleCart(null, ${productId}, '${title}', '${price}', '${imageUrl}')">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', itemHtml);
+                    totalElement.innerText = (currentTotal + itemPrice).toFixed(2);
+                } else if (data.status === 'removed') {
+                    if(starElement) starElement.classList.remove('active');
+                    const cartItem = document.getElementById(`sidebar-item-${productId}`);
+                    if (cartItem) {
+                        cartItem.remove();
+                        totalElement.innerText = Math.max(0, currentTotal - itemPrice).toFixed(2);
+                    }
+                    if (container.children.length === 0) {
+                        container.innerHTML = '<p id="emptyCartMessage" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #999; text-align: center; margin-top: 40px;">Tu cesta está vacía</p>';
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

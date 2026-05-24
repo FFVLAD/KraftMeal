@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ product.title }} | MalvorX</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+        }
+
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px 40px;
+            box-sizing: border-box;
+            z-index: 1000;
+            border-bottom: 1px solid #f2f2f2;
+        }
+
+        .nav-links a, .logo a, .back-link {
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: #000000;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .logo { font-size: 24px; letter-spacing: 7px; font-weight: bold; }
+
+        .product-container {
+            margin-top: 90px;
+            display: flex;
+            padding: 40px;
+            box-sizing: border-box;
+            gap: 40px;
+        }
+
+        .gallery-column {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .gallery-image {
+            width: 100%;
+            max-width: 700px;
+            height: auto;
+            object-fit: cover;
+            display: block;
+            margin: 0 auto;
+            background-color: #fbfbfb;
+        }
+
+        .info-column {
+            width: 40%;
+            position: -webkit-sticky;
+            position: sticky;
+            top: 130px;
+            height: fit-content;
+            padding-left: 40px;
+            box-sizing: border-box;
+        }
+
+        .product-title {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .product-price {
+            font-size: 13px;
+            color: #000000;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .product-description {
+            font-size: 11px;
+            line-height: 1.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #333333;
+            margin-bottom: 30px;
+            max-width: 400px;
+        }
+
+        .product-meta-block {
+            border-top: 1px solid #f2f2f2;
+            padding-top: 20px;
+            margin-bottom: 30px;
+            max-width: 350px;
+        }
+
+        .meta-line {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            color: #000000;
+        }
+
+        .meta-line span {
+            color: #666666;
+            font-weight: bold;
+        }
+
+        .action-button {
+            width: 100%;
+            max-width: 350px;
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            padding: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s, opacity 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .action-button.active {
+            background-color: #555555;
+        }
+
+        .action-button:hover {
+            opacity: 0.8;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #999999;
+        }
+        .back-link:hover { color: #000; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="nav-links">
+            <a href="{% url 'index' %}">← Volver</a>
+        </div>
+        <div class="logo"><a href="{% url 'index' %}">MalvorX</a></div>
+        <div style="width: 60px;"></div>
+    </header>
+
+    <div class="product-container">
+        <div class="gallery-column">
+            {% for img_url in all_images %}
+                <img class="gallery-image" src="{{ img_url }}" alt="{{ product.title }}">
+            {% endfor %}
+        </div>
+
+        <div class="info-column">
+            <h1 class="product-title">{{ product.title }}</h1>
+            <div class="product-price">{{ product.price }} USD</div>
+
+            <div class="product-description">
+                {{ product.description|default:"Sin descripción adicional disponible." }}
+            </div>
+
+            <div class="product-meta-block">
+                <div class="meta-line">
+                    Género:
+                    <span>
+                        {% for g in product.genders.all %}
+                            {{ g.name }}{% if not forloop.last %} / {% endif %}
+                        {% empty %}
+                            No especificado
+                        {% endfor %}
+                    </span>
+                </div>
+                <div class="meta-line">
+                    Tallas disponibles:
+                    <span>
+                        {% for size in product.sizes.all %}
+                            {{ size.name }}{% if not forloop.last %}, {% endif %}
+                        {% empty %}
+                            Única
+                        {% endfor %}
+                    </span>
+                </div>
+            </div>
+
+            <button id="detailCartBtn" class="action-button {% if is_in_cart %}active{% endif %}" onclick="toggleDetailCart({{ product.id }})">
+                {% if is_in_cart %} QUITAR DE LA CESTA {% else %} AÑADIR A LA CESTA {% endif %}
+            </button>
+
+            <br>
+            <a href="{% url 'index' %}" class="back-link">← Continuar comprando</a>
+        </div>
+    </div>
+
+    <script>
+        function toggleDetailCart(productId) {
+            {% if not user.is_authenticated %}
+                alert("Por favor, inicie sesión para añadir productos a la cesta.");
+                window.location.href = "{% url 'login' %}";
+                return;
+            {% endif %}
+
+            fetch(`/api/cart/toggle/${productId}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const btn = document.getElementById('detailCartBtn');
+                if (data.status === 'added') {
+                    btn.classList.add('active');
+                    btn.innerText = 'QUITAR DE LA CESTA';
+                } else if (data.status === 'removed') {
+                    btn.classList.remove('active');
+                    btn.innerText = 'AÑADIR A LA CESTA';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
