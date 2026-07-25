@@ -5,27 +5,25 @@ from telebot import TeleBot, types
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings') # Якщо головна папка не myproject, вкажи її назву
 django.setup()
-
 
 from shop.models import Order, UserProfile, StoreSettings
 
-TOKEN = '8605046875:AAEIdjsRa6_CbUq2VgSSfqjegYKR_YhLGR4'
+
+TOKEN = os.environ.get('BOT_TOKEN', '8605046875:AAEIdjsRa6_CbUq2VgSSfqjegYKR_YhLGR4')
 bot = TeleBot(TOKEN)
 
 admin_waiting_reason = {}
 
 
 def format_order_text(order):
-
     items = order.items.all()
     items_text = ""
 
     for item in items:
         item_total = item.price * item.quantity
         items_text += f"• {item.product.title} (x{item.quantity}) — {item_total}€\n"
-
 
     profile, _ = UserProfile.objects.get_or_create(user=order.user)
     regular_badge = "⭐ Постійний клієнт" if getattr(profile, 'is_regular_customer', False) else "👤 Клієнт"
@@ -56,7 +54,6 @@ def get_admin_keyboard(order_id):
     return keyboard
 
 
-
 @bot.message_handler(commands=['start'])
 def start_cmd(message):
     bot.send_message(
@@ -65,11 +62,9 @@ def start_cmd(message):
     )
 
 
-
 @bot.message_handler(content_types=['photo'])
 def handle_photo_receipt(message):
     try:
-
         user_orders = Order.objects.filter(
             status='pending',
             payment_method='card'
@@ -93,7 +88,6 @@ def handle_photo_receipt(message):
         keyboard = get_admin_keyboard(order.id)
         photo_id = message.photo[-1].file_id
 
-
         try:
             settings_obj = StoreSettings.objects.get(id=1)
             admin_ids = settings_obj.get_admin_ids_list()
@@ -103,7 +97,6 @@ def handle_photo_receipt(message):
         if not admin_ids:
             bot.reply_to(message, "⚠️ Помилка: В системі не налаштовано ID адміністраторів.")
             return
-
 
         for admin_id in admin_ids:
             try:
@@ -124,7 +117,6 @@ def handle_photo_receipt(message):
         bot.reply_to(message, "⚠️ Виникла помилка при обробці чека. Спробуйте ще раз.")
 
 
-
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     if call.data.startswith("confirm_"):
@@ -137,7 +129,6 @@ def callback_handler(call):
 
             bot.answer_callback_query(call.id, "Замовлення підтверджено!")
             status_text = "\n\n🟢 <b>СТАТУС: ПРИЙНЯТО</b>"
-
 
             if call.message.photo or call.message.caption is not None:
                 current_caption = call.message.caption or ""
@@ -171,7 +162,6 @@ def callback_handler(call):
         bot.register_next_step_handler(msg, process_rejection_reason, order_id, call.message)
 
 
-
 def process_rejection_reason(message, order_id, original_msg):
     reason_text = message.text
 
@@ -182,7 +172,6 @@ def process_rejection_reason(message, order_id, original_msg):
         order.save()
 
         status_text = f"\n\n🔴 <b>СТАТУС: ВІДХИЛЕНО</b>\n❌ <b>Причина:</b> {reason_text}"
-
 
         if original_msg.photo or original_msg.caption is not None:
             current_caption = original_msg.caption or ""
@@ -208,6 +197,11 @@ def process_rejection_reason(message, order_id, original_msg):
         bot.send_message(message.chat.id, "Замовлення не знайдено.")
 
 
-if __name__ == '__main__':
+
+def run_bot():
     print("🤖 Бот KraftMeal запущений і готовий до роботи...")
-    bot.polling(none_stop=True)
+    bot.infinity_polling(skip_pending=True)
+
+
+if __name__ == '__main__':
+    run_bot()
