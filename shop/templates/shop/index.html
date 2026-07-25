@@ -1,434 +1,530 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>- MalvorX -</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KraftMeal — Доставка їжі у Торрев'єсі</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            color: #000000;
-            scroll-behavior: smooth;
+        :root {
+            --bg-main: #4d5530;
+            --header-bg: #111a14;
+            --banner-bg: #16241b;
+            --accent-gold: #f2bd42;
+            --text-light: #ffffff;
+            --text-muted: #a3b09d;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-light);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            position: relative;
+        }
+
+        .bg-watermark {
+            position: fixed;
+            top: 53%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 480px;
+            height: 480px;
+            background-image: url('{% static "shop/images/logo_bg.png" %}');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.22;
+            pointer-events: none;
+            z-index: 0;
         }
 
         header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background-color: #ffffff;
+            background: var(--header-bg);
+            padding: 12px 32px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 25px 40px;
-            box-sizing: border-box;
-            z-index: 1000;
-            border-bottom: 1px solid #f2f2f2;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 30px;
-        }
-
-        .nav-links a, .auth-links a, .auth-links button {
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: 2px;
-            color: #000000;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .nav-links a.active {
-            border-bottom: 1px solid #000;
-            padding-bottom: 2px;
+            z-index: 10;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .logo {
-            font-size: 24px;
-            letter-spacing: 7px;
-            font-weight: bold;
-            text-transform: uppercase;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .logo a {
-            color: #000000;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-light);
             text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+        .logo span {
+            color: var(--accent-gold);
+            font-family: 'Caveat', cursive;
+            font-size: 28px;
+            font-weight: 600;
         }
 
-        .auth-links {
-            display: flex;
-            gap: 25px;
-            align-items: center;
-        }
-
-        .cart-toggle-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            outline: none;
-            padding: 0;
-        }
-
-
-        .search-container {
+        .header-nav {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 16px;
+            font-size: 13px;
         }
-        .search-input {
-            border: none;
-            border-bottom: 1px solid #000;
-            font-size: 11px;
-            padding: 2px 0;
-            outline: none;
-            width: 0;
-            transition: width 0.3s ease;
-            text-transform: uppercase;
+        .header-nav .username { color: var(--text-light); font-weight: 600; }
+        .header-nav a {
+            color: var(--text-light);
+            text-decoration: none;
+            opacity: 0.9;
         }
-        .search-input.open {
-            width: 120px;
-        }
+        .header-nav a:hover { opacity: 1; color: var(--accent-gold); }
 
-
-        .search-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0;
-
-            color: #000000;
-            transition: color 0.2s ease;
-            outline: none;
-            font-family: inherit;
+        .nav-order-btn {
+            background: rgba(242, 189, 66, 0.15);
+            color: var(--accent-gold) !important;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--accent-gold);
+            font-weight: 700;
             display: flex;
             align-items: center;
+            gap: 6px;
         }
 
-
-        .search-btn:hover {
-            color: #777777;
-        }
-
-
-        .search-icon-text {
-            font-size: 16px;
-            font-weight: lighter;
-        }
-
-        .main-content {
+        .container {
+            max-width: 1150px;
+            margin: 0 auto;
+            padding: 24px 20px 40px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
             flex: 1;
         }
 
-        .hero-section {
-            height: 100vh;
+        .categories-nav {
             display: flex;
-            justify-content: center;
+            gap: 12px;
+            margin-bottom: 35px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .cat-btn {
+            padding: 10px 24px;
+            background: #233226;
+            border-radius: 30px;
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+            transition: 0.15s;
+        }
+
+        .cat-btn.active {
+            background: var(--accent-gold);
+            color: #111a14;
+        }
+
+        .hero-banner {
+            background: var(--banner-bg);
+            border-radius: 26px;
+            padding: 42px 30px 38px;
+            text-align: center;
+            margin: 0 auto 30px;
+            max-width: 780px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+        }
+
+        .hero-banner h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.2px;
+            margin-bottom: 2px;
+        }
+
+        .hero-banner .sub {
+            font-family: 'Caveat', cursive;
+            font-size: 32px;
+            color: var(--accent-gold);
+            margin-bottom: 14px;
+            font-weight: 600;
+        }
+
+        .hero-banner p {
+            font-size: 13px;
+            color: #c0cbba;
+            font-weight: 400;
+        }
+
+
+        .active-order-card {
+            background: var(--banner-bg);
+            border: 2px solid var(--accent-gold);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .active-order-header {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            background-color: #ffffff;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
         }
 
-        .scroll-hint {
-            font-size: 11px;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            color: #999999;
-            animation: pulse 2.5s infinite;
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 12px;
+        }
+        .status-pending { background: #d97706; color: #fff; }
+        .status-confirmed { background: #16a34a; color: #fff; }
+        .status-canceled, .status-cancelled { background: #dc2626; color: #fff; }
+
+        .cancel-reason-box {
+            background: rgba(220, 38, 38, 0.15);
+            border: 1px solid rgba(220, 38, 38, 0.4);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin: 12px 0;
+            font-size: 13px;
+            color: #fca5a5;
+            line-height: 1.4;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 0.4; }
-            50% { opacity: 1; }
+        .btn-dismiss {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: 0.2s;
         }
-
-        .catalog-section {
-            padding: 100px 40px;
-            max-width: 1400px;
-            margin: 0 auto;
+        .btn-dismiss:hover {
+            background: rgba(255, 255, 255, 0.28);
         }
 
         .products-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 50px 30px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 22px;
+            margin-top: 20px;
         }
 
         .product-card {
-            position: relative;
-            text-align: center;
-        }
-
-        .product-link {
-            text-decoration: none;
-            color: #000000;
-            display: block;
-        }
-
-        .product-image {
-            width: 100%;
-            height: 550px;
-            object-fit: cover;
-            background-color: #fbfbfb;
-        }
-
-        .product-info {
-            margin-top: 15px;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .product-price {
-            margin-top: 5px;
-            color: #666666;
-        }
-
-        .star-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: none;
-            border: none;
-            font-size: 26px;
-            cursor: pointer;
-            color: #e0e0e0;
-            transition: color 0.2s, transform 0.1s;
-            z-index: 10;
-            outline: none;
-        }
-
-        .star-btn.active {
-            color: #000000;
-        }
-
-
-        .cart-sidebar {
-            position: fixed;
-            top: 0;
-            right: -400px;
-            width: 350px;
-            height: 100vh;
-            background-color: #ffffff;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.05);
-            z-index: 2000;
-            transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-            padding: 40px;
-            box-sizing: border-box;
+            background: var(--banner-bg);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(242, 189, 66, 0.15);
             display: flex;
             flex-direction: column;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
         }
 
-        .cart-sidebar.open { right: 0; }
-        .cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
-        .cart-header h3 { margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 3px; }
-        .close-cart-btn { background: none; border: none; font-size: 20px; cursor: pointer; }
-        .cart-items-container { flex: 1; overflow-y: auto; }
-        .cart-item { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #f2f2f2; }
-        .cart-item-img { width: 60px; height: 80px; object-fit: cover; }
-        .cart-item-details { flex: 1; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
-        .cart-item-price { margin-top: 5px; color: #666666; }
-        .remove-item-btn { background: none; border: none; color: #999; cursor: pointer; font-size: 11px; text-transform: uppercase; }
-        .cart-footer { border-top: 1px solid #000; padding-top: 20px; margin-top: 10px; }
-        .cart-total-line { display: flex; justify-content: space-between; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; }
-        .cart-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.1); z-index: 1900; display: none; }
-        .cart-overlay.show { display: block; }
+        .product-img {
+            width: 100%;
+            height: 190px;
+            object-fit: cover;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .product-body {
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .product-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-light);
+            margin-bottom: 6px;
+        }
+
+        .weight-badge {
+            display: inline-block;
+            background: rgba(242, 189, 66, 0.15);
+            color: var(--accent-gold);
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            align-self: flex-start;
+            border: 1px solid rgba(242, 189, 66, 0.3);
+        }
+
+        .product-desc {
+            font-size: 13px;
+            color: #a3b09d;
+            line-height: 1.45;
+            margin-bottom: 16px;
+            flex: 1;
+        }
+
+        .product-foot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .price {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--accent-gold);
+        }
+
+        .btn-add {
+            background: var(--accent-gold);
+            color: #111a14;
+            padding: 9px 18px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-add.in-cart {
+            background: #233226;
+            color: var(--accent-gold);
+            border: 1px solid var(--accent-gold);
+        }
+
+        .cart-bar {
+            position: relative;
+            margin: 35px auto 10px;
+            width: 100%;
+            max-width: 550px;
+            background: var(--accent-gold);
+            color: #111a14;
+            padding: 14px 24px;
+            border-radius: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 16px;
+            z-index: 10;
+        }
 
         footer {
-            border-top: 1px solid #f2f2f2;
-            padding: 40px;
-            background-color: #ffffff;
+            background: #0f1712;
             text-align: center;
-            font-size: 10px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: #555555;
-            line-height: 1.8;
+            padding: 14px;
+            font-size: 11px;
+            color: #8c9987;
+            margin-top: auto;
+            position: relative;
+            z-index: 10;
+            line-height: 1.6;
         }
-        footer a {
-            color: #000000;
-            text-decoration: none;
-            font-weight: bold;
+
+        footer a { color: var(--accent-gold); text-decoration: none; }
+
+        @media(max-width: 600px) {
+            header { padding: 12px 16px; }
+            .header-nav { font-size: 12px; gap: 10px; }
+            .hero-banner { padding: 25px 16px; }
+            .hero-banner h1 { font-size: 20px; }
+            .hero-banner .sub { font-size: 24px; }
+            .products-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
+    <div class="bg-watermark"></div>
+
     <header>
-        <div class="nav-links">
-            <a href="{% url 'index' %}" class="{% if not current_gender %}active{% endif %}">Novedades</a>
-            <a href="{% url 'index' %}?gender=Mujer" class="{% if current_gender == 'Mujer' %}active{% endif %}">Mujer</a>
-            <a href="{% url 'index' %}?gender=Hombre" class="{% if current_gender == 'Hombre' %}active{% endif %}">Hombre</a>
-        </div>
-
-        <div class="logo"><a href="{% url 'index' %}">MalvorX</a></div>
-
-        <div class="auth-links">
+        <a href="{% url 'index' %}" class="logo">Kraft<span>Meal</span></a>
+        <div class="header-nav">
             {% if user.is_authenticated %}
-                <span>Hola, {{ user.username }}</span>
-                <button class="cart-toggle-btn" onclick="toggleSidebar(true)">Cesta</button>
+                {% if active_order %}
+                    <a href="#active-order" class="nav-order-btn">
+                        📦 Моє замовлення
+                        {% if active_order.status == 'pending' %}🟡{% elif active_order.status == 'confirmed' %}✅{% else %}❌{% endif %}
+                    </a>
+                {% endif %}
+                <span class="username">{{ user.username }}</span>
                 {% if user.is_staff %}
-                    <a href="/admin/" target="_blank" style="color: #c9302c;">Panel Admin</a>
+                    <a href="/admin/">Панель</a>
                 {% endif %}
-                <a href="{% url 'logout' %}" style="color: #777;">Cerrar Sesión</a>
+                <a href="{% url 'logout' %}">Вийти</a>
             {% else %}
-                <a href="{% url 'login' %}">Iniciar Sesión</a>
-                <a href="{% url 'register' %}">Registrarse</a>
+                <a href="{% url 'login' %}">Вхід / Реєстрація</a>
             {% endif %}
-
-            <form method="get" action="{% url 'index' %}" class="search-container">
-                {% if current_gender %}
-                    <input type="hidden" name="gender" value="{{ current_gender }}">
-                {% endif %}
-                <input type="text" name="q" id="searchInput" class="search-input {% if current_search %}open{% endif %}" value="{{ current_search }}" placeholder="Buscar...">
-                <button type="button" class="search-btn" onclick="handleSearchClick()">
-                    <span class="search-icon-text">&#9906;</span>
-                </button>
-            </form>
         </div>
     </header>
 
-    <div class="cart-overlay" id="cartOverlay" onclick="toggleSidebar(false)"></div>
+    <div class="container">
 
-    <div class="cart-sidebar" id="cartSidebar">
-        <div class="cart-header">
-            <h3>Mi Cesta</h3>
-            <button class="close-cart-btn" onclick="toggleSidebar(false)">✕</button>
-        </div>
-        <div class="cart-items-container" id="cartItemsContainer">
-            {% for item in cart_items %}
-            <div class="cart-item" id="sidebar-item-{{ item.id }}">
-                <img class="cart-item-img" src="{{ item.image_url }}">
-                <div class="cart-item-details">
-                    <div>{{ item.title }}</div>
-                    <div class="cart-item-price">{{ item.price }} USD</div>
-                    <button class="remove-item-btn" onclick="toggleCart(null, {{ item.id }})">Eliminar</button>
-                </div>
+        {% if active_order %}
+        <div class="active-order-card" id="active-order">
+            <div class="active-order-header">
+                <h3>📦 Моє замовлення #{{ active_order.id }}</h3>
+                <span class="status-badge status-{{ active_order.status }}">
+                    {% if active_order.status == 'pending' %}🟡 Очікує підтвердження
+                    {% elif active_order.status == 'confirmed' %}✅ Прийнято
+                    {% elif active_order.status == 'canceled' or active_order.status == 'cancelled' %}❌ Скасовано
+                    {% endif %}
+                </span>
             </div>
-            {% empty %}
-            <p id="emptyCartMessage" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #999; text-align: center; margin-top: 40px;">Tu cesta está vacía</p>
-            {% endfor %}
-        </div>
-        <div class="cart-footer">
-            <div class="cart-total-line">
-                <span>Total:</span>
-                <span><span id="cartTotalValue">{{ cart_total }}</span> USD</span>
-            </div>
-        </div>
-    </div>
 
-    <div class="main-content">
-        {% if not current_search %}
-        <section class="hero-section">
-            <div class="scroll-hint">Desplace hacia abajo para ver la colección ↓</div>
-        </section>
+            <p style="font-size: 13px; color: #a3b09d; margin-bottom: 8px;">
+                <b>Час доставки:</b> {{ active_order.delivery_time }} | <b>Адреса:</b> {{ active_order.address }}
+            </p>
+
+            {% if active_order.status == 'canceled' or active_order.status == 'cancelled' %}
+                {% if active_order.cancel_reason %}
+                    <div class="cancel-reason-box">
+                        💬 <b>Причина відмови:</b> {{ active_order.cancel_reason }}
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <p style="font-size: 15px; font-weight: 800; color: var(--accent-gold); margin: 0;">
+                    Сума: {{ active_order.total_price }}€
+                </p>
+
+
+                {% if active_order.status == 'confirmed' or active_order.status == 'canceled' or active_order.status == 'cancelled' %}
+                    <button class="btn-dismiss" onclick="dismissOrder({{ active_order.id }})">
+                        Зрозуміло
+                    </button>
+                {% endif %}
+            </div>
+        </div>
         {% endif %}
 
-        <section class="catalog-section">
+        <div class="categories-nav">
+            <a href="{% url 'index' %}" class="cat-btn {% if not selected_cat %}active{% endif %}">Усі страви</a>
+            {% for cat in categories %}
+                <a href="{% url 'index' %}?category={{ cat.name }}" class="cat-btn {% if selected_cat == cat.name %}active{% endif %}">
+                    {{ cat.name }}
+                </a>
+            {% endfor %}
+        </div>
+
+        <div class="hero-banner">
+            <h1>Крафтова домашня кухня</h1>
+            <div class="sub">у Торрев'єсі</div>
+            <p>Готуємо з душею за традиційними рецептами. Доставка прямо до ваших дверей.</p>
+        </div>
+
+        {% if products %}
             <div class="products-grid">
                 {% for product in products %}
                 <div class="product-card">
-                    <button id="catalog-star-{{ product.id }}" class="star-btn {% if product.id in user_cart_ids %}active{% endif %}"
-                            onclick="toggleCart(this, {{ product.id }}, '{{ product.title }}', '{{ product.price }}', '{{ product.image_url }}')">★</button>
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.title }}" class="product-img">
+                    {% endif %}
+                    <div class="product-body">
+                        <h2 class="product-title">{{ product.title }}</h2>
 
-                    <a href="{% url 'product_detail' product.id %}" class="product-link">
-                        <img class="product-image" src="{{ product.image_url }}" alt="{{ product.title }}">
-                        <div class="product-info">
-                            <div>{{ product.title }}</div>
-                            <div class="product-price">{{ product.price }} USD</div>
+                        {% if product.weight_or_portion %}
+                            <div class="weight-badge">⚖️ {{ product.weight_or_portion }}</div>
+                        {% endif %}
+
+                        <p class="product-desc">{{ product.description }}</p>
+
+                        <div class="product-foot">
+                            <div class="price-box">
+                                <span class="price">{{ product.price }}€</span>
+                            </div>
+
+                            {% if user.is_authenticated %}
+                                <button class="btn-add {% if product.id in user_cart_ids %}in-cart{% endif %}" onclick="toggleCart({{ product.id }})">
+                                    {% if product.id in user_cart_ids %}✓ У кошику{% else %}Замовити{% endif %}
+                                </button>
+                            {% else %}
+                                <a href="{% url 'login' %}" class="btn-add">Замовити</a>
+                            {% endif %}
                         </div>
-                    </a>
+                    </div>
                 </div>
-                {% empty %}
-                <p style="grid-column: 1/-1; text-align: center; letter-spacing: 2px; color: #999; font-size: 12px; text-transform: uppercase;">
-                    No se han encontrado artículos.
-                </p>
                 {% endfor %}
             </div>
-        </section>
+        {% endif %}
+
+        {% if user.is_authenticated and cart_items_count %}
+        <a href="{% url 'checkout' %}" class="cart-bar" id="cartBar">
+            <span>🚀 Оформити замовлення ({{ cart_items_count }})</span>
+            <span>{{ cart_total }}€</span>
+        </a>
+        {% endif %}
     </div>
 
-    <footer>
-        <div>Si ha elegido un artículo y desea adquirirlo, o si el artículo que busca no está en el sitio web, puede ponerse en contacto con nosotros a través de Telegram: <a href="https://t.me/Lucsgoglv" target="_blank">@Lucsgoglv</a> o <a href="https://t.me/futa1o" target="_blank">@futa1o</a>.</div>
-        <div style="color: #999999; margin-top: 8px; font-size: 9px;">Si nota algún problema técnico, por favor infórmenos.</div>
-    </footer>
+<footer>
+    📍 <b>KraftMeal Torrevieja</b> — Авторська домашня кулінарія<br>
+    Instagram: <a href="https://instagram.com/kraftmeal.torrevieja" target="_blank">@kraftmeal.torrevieja</a><br>
+    <span style="color: #FFD700;">Якщо потрібен сайт пишіть +34624699617</span>
+</footer>
 
-    <script>
-        function toggleSidebar(open) {
-            const sidebar = document.getElementById('cartSidebar');
-            const overlay = document.getElementById('cartOverlay');
-            if (sidebar && overlay) {
-                if (open) { sidebar.classList.add('open'); overlay.classList.add('show'); }
-                else { sidebar.classList.remove('open'); overlay.classList.remove('show'); }
+<script>
+    function toggleCart(productId) {
+        fetch(`/toggle_cart/${productId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
             }
-        }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'added' || data.status === 'removed') {
 
-        function handleSearchClick() {
-            const input = document.getElementById('searchInput');
-            if (input.classList.contains('open')) {
-                if (input.value.trim() !== '') { input.form.submit(); }
-                else { input.classList.remove('open'); }
-            } else { input.classList.add('open'); input.focus(); }
-        }
-
-        function toggleCart(starElement, productId, title, price, imageUrl) {
-            {% if not user.is_authenticated %}
-                alert("Por favor, inicie sesión para añadir productos a la cesta.");
+                location.reload();
+            } else if (data.status === 'unauthorized') {
                 window.location.href = "{% url 'login' %}";
-                return;
-            {% endif %}
+            }
+        })
+        .catch(err => console.error('Помилка додавання в кошик:', err));
+    }
 
-            if (!starElement) { starElement = document.getElementById(`catalog-star-${productId}`); }
+    function dismissOrder(orderId) {
 
-            fetch(`/api/cart/toggle/${productId}/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' }
-            })
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById('cartItemsContainer');
-                const totalElement = document.getElementById('cartTotalValue');
-                let currentTotal = parseFloat(totalElement.innerText);
-                let itemPrice = parseFloat(price) || 0;
-
-                if (data.status === 'added') {
-                    if(starElement) starElement.classList.add('active');
-                    const emptyMsg = document.getElementById('emptyCartMessage');
-                    if(emptyMsg) emptyMsg.remove();
-
-                    const itemHtml = `
-                        <div class="cart-item" id="sidebar-item-${productId}">
-                            <img class="cart-item-img" src="${imageUrl}">
-                            <div class="cart-item-details">
-                                <div>${title}</div>
-                                <div class="cart-item-price">${price} USD</div>
-                                <button class="remove-item-btn" onclick="toggleCart(null, ${productId}, '${title}', '${price}', '${imageUrl}')">Eliminar</button>
-                            </div>
-                        </div>
-                    `;
-                    container.insertAdjacentHTML('beforeend', itemHtml);
-                    totalElement.innerText = (currentTotal + itemPrice).toFixed(2);
-                } else if (data.status === 'removed') {
-                    if(starElement) starElement.classList.remove('active');
-                    const cartItem = document.getElementById(`sidebar-item-${productId}`);
-                    if (cartItem) {
-                        cartItem.remove();
-                        totalElement.innerText = Math.max(0, currentTotal - itemPrice).toFixed(2);
-                    }
-                    if (container.children.length === 0) {
-                        container.innerHTML = '<p id="emptyCartMessage" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #999; text-align: center; margin-top: 40px;">Tu cesta está vacía</p>';
-                    }
-                }
-            });
+        const orderCard = document.getElementById('active-order');
+        if (orderCard) {
+            orderCard.style.display = 'none';
         }
-    </script>
+
+        fetch(`/dismiss_order/${orderId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            location.reload();
+        })
+        .catch(err => console.error('Помилка приховання:', err));
+    }
+</script>
+
 </body>
 </html>

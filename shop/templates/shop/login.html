@@ -1,0 +1,185 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вхід — KraftMeal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #4a532d;
+            --card-bg: rgba(20, 35, 27, 0.92);
+            --accent-gold: #e2b049;
+            --text-light: #f3f5f4;
+            --text-muted: #cbd7c8;
+            --error-red: #ff6b6b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            position: relative;
+        }
+
+        .bg-watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(85vw, 500px);
+            height: min(85vw, 500px);
+            background-image: url('{% static "shop/images/logo_bg.png" %}');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.18;
+            pointer-events: none;
+            z-index: 0;
+            -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 75%);
+            mask-image: radial-gradient(circle, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 75%);
+        }
+
+        .auth-card {
+            position: relative;
+            z-index: 1;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            width: 100%;
+            max-width: 400px;
+            padding: 30px 20px;
+            border-radius: 24px;
+            border: 1px solid rgba(226, 176, 73, 0.3);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .logo-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+        .logo-title span { color: var(--accent-gold); font-family: 'Caveat', cursive; font-size: 34px; }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .alert-error {
+            background: rgba(255, 107, 107, 0.15);
+            border: 1px solid var(--error-red);
+            color: #ff9999;
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            background: rgba(18, 32, 24, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            color: var(--text-light);
+            font-size: 16px;
+            outline: none;
+        }
+
+        input:focus { border-color: var(--accent-gold); }
+
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--accent-gold), #c99833);
+            color: #121f18;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 10px;
+            touch-action: manipulation;
+        }
+
+        .auth-footer {
+            margin-top: 20px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .auth-footer a {
+            color: var(--accent-gold);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .home-link {
+            display: inline-block;
+            margin-top: 14px;
+            font-size: 13px;
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-watermark"></div>
+
+    <div class="auth-card">
+        <div class="logo-title">Kraft<span>Meal</span></div>
+        <p class="subtitle">Увійдіть до акаунту для замовлення</p>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert-error">⚠️ {{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Логін або Email</label>
+                <input type="text" name="username" required placeholder="Ваш логін">
+            </div>
+            <div class="form-group">
+                <label>Пароль</label>
+                <input type="password" name="password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn-submit">Увійти</button>
+        </form>
+
+        <div class="auth-footer">
+            Не маєте акаунту? <a href="{% url 'register' %}">Зареєструватися</a>
+        </div>
+        <a href="{% url 'index' %}" class="home-link">← На головну</a>
+    </div>
+</body>
+</html>

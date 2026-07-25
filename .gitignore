@@ -1,0 +1,21 @@
+# Python / Virtualenv
+.venv/
+venv/
+ENV/
+__pycache__/
+*.pyc
+*.pyo
+
+
+db.sqlite3
+
+
+.idea/
+.vscode/
+
+
+staticfiles/
+media/
+
+
+.env

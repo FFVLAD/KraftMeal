@@ -1,16 +1,11 @@
 from django.contrib import admin
-from .models import Product, ProductImage, CartItem, GenderCategory, SizeCategory
+from .models import Product, FoodCategory, CartItem, Order, OrderItem, UserProfile, StoreSettings
 
-class ProductImageInline(admin.TabularInline):
-    model = ProductImage
-    extra = 7
 
-@admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
-    list_display = ('title', 'price')
-    inlines = [ProductImageInline]
-    filter_horizontal = ('genders', 'sizes')
-
-admin.site.register(GenderCategory)
-admin.site.register(SizeCategory)
+admin.site.register(FoodCategory)
+admin.site.register(Product)
 admin.site.register(CartItem)
+admin.site.register(Order)
+admin.site.register(OrderItem)
+admin.site.register(UserProfile)
+admin.site.register(StoreSettings)
