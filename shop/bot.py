@@ -1,12 +1,12 @@
 import os
 import sys
-import django
+
 from telebot import TeleBot, types
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings') # Якщо головна папка не myproject, вкажи її назву
-django.setup()
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
+
 
 from shop.models import Order, UserProfile, StoreSettings
 
