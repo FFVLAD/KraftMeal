@@ -46,7 +46,7 @@ def format_order_text(order):
 
 
 def get_admin_keyboard(order_id):
-    """Клавіатура дій для адміністратора"""
+
     keyboard = types.InlineKeyboardMarkup(row_width=2)
     btn_confirm = types.InlineKeyboardButton("✅ Прийняти", callback_data=f"confirm_{order_id}")
     btn_cancel = types.InlineKeyboardButton("❌ Відхилити", callback_data=f"cancel_{order_id}")
