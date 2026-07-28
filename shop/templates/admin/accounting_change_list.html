@@ -1,0 +1,53 @@
+{% extends "admin/change_list.html" %}
+
+{% block content %}
+<div style="margin-bottom: 30px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+    <h2>📊 Звіт замовлень по клієнтах (по місяцях)</h2>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; background: white; color: #333;">
+        <thead>
+            <tr style="background: #417690; color: white; text-align: left;">
+                <th style="padding: 10px;">Місяць</th>
+                <th style="padding: 10px;">Клієнт (Username)</th>
+                <th style="padding: 10px;">Кількість замовлень</th>
+                <th style="padding: 10px;">Загальна сума</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in client_monthly_stats %}
+            <tr style="border-bottom: 1px solid #ddd;">
+                <td style="padding: 10px;"><b>{{ item.month|date:"F Y" }}</b></td>
+                <td style="padding: 10px;">{{ item.user__username }} ({% if item.user__first_name %}{{ item.user__first_name }}{% else %}Без імені{% endif %})</td>
+                <td style="padding: 10px;"><b>{{ item.total_orders }}</b></td>
+                <td style="padding: 10px;">{{ item.total_spent|default:"0" }} грн</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="padding: 10px;">Замовлень поки немає.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-bottom: 30px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+    <h2>🍲 Популярність страв (Скільки разів замовляли)</h2>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; background: white; color: #333;">
+        <thead>
+            <tr style="background: #264b5d; color: white; text-align: left;">
+                <th style="padding: 10px;">Назва страви / продукту</th>
+                <th style="padding: 10px;">Продано (шт)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for prod in product_stats %}
+            <tr style="border-bottom: 1px solid #ddd;">
+                <td style="padding: 10px;">{{ prod.product__title }}</td>
+                <td style="padding: 10px;"><b>{{ prod.total_quantity }}</b></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="2" style="padding: 10px;">Дані по окремих стравах відсутні.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{{ block.super }}
+{% endblock %}
