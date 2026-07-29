@@ -2,12 +2,15 @@ import os
 import sys
 from telebot import TeleBot, types
 
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 
 import django
+from django.apps import apps
 
-django.setup()
+if not apps.ready:
+    django.setup()
 
 from shop.models import Order, UserProfile, StoreSettings
 
