@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 
 class StoreSettings(models.Model):
     menu_price = models.DecimalField(max_digits=8, decimal_places=2, default=10.00, verbose_name="Ціна комплексного меню (€)")
-    admin_telegram_ids = models.CharField(max_length=255, default="", help_text="ID адмінів через кому", verbose_name="Telegram ID адмінів")
+    admin_telegram_ids = models.CharField(max_length=255, default="", blank=True, help_text="ID адмінів через кому", verbose_name="Telegram ID адмінів")
 
     class Meta:
         verbose_name = "Налаштування магазину"
@@ -50,17 +50,24 @@ class FoodCategory(models.Model):
 
 
 class Product(models.Model):
-    category = models.ForeignKey(FoodCategory, on_delete=models.CASCADE, related_name='products', verbose_name="Категорія")
+    category = models.ForeignKey(
+        FoodCategory,
+        on_delete=models.CASCADE,
+        related_name='products',
+        verbose_name="Категорія",
+        null=True,
+        blank=True
+    )
     title = models.CharField(max_length=200, verbose_name="Назва страви")
-    description = models.TextField(blank=True, verbose_name="Опис")
-    price = models.DecimalField(max_digits=8, decimal_places=2, verbose_name="Стандартна ціна (€)")
+    description = models.TextField(blank=True, default="", verbose_name="Опис")
+    price = models.DecimalField(max_digits=8, decimal_places=2, default=0.00, verbose_name="Стандартна ціна (€)")
     extra_price = models.DecimalField(
         max_digits=8,
         decimal_places=2,
         default=0.00,
         verbose_name="Ціна, якщо додається до сформованого меню (€)"
     )
-    weight_or_portion = models.CharField(max_length=100, blank=True, verbose_name="Вага / Порція")
+    weight_or_portion = models.CharField(max_length=100, blank=True, default="", verbose_name="Вага / Порція")
     image = models.ImageField(upload_to='products/', blank=True, null=True, verbose_name="Фотографія страви")
 
     class Meta:
@@ -96,8 +103,8 @@ class Order(models.Model):
     phone = models.CharField(max_length=50, verbose_name="Телефон")
     delivery_time = models.CharField(max_length=100, verbose_name="Бажаний час")
     estimated_delivery_time = models.CharField(max_length=100, blank=True, null=True, verbose_name="Орієнтовний час доставки від адміна")
-    comment = models.TextField(blank=True, verbose_name="Коментар")
-    total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Сума")
+    comment = models.CharField(max_length=500, blank=True, null=True, default="", verbose_name="Коментар")
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Сума")
     payment_method = models.CharField(max_length=20, default='cash', verbose_name="Метод оплати")
     selected_card = models.ForeignKey(PaymentCard, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Обрана картка")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="Статус")
@@ -116,7 +123,7 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    price = models.DecimalField(max_digits=8, decimal_places=2)
+    price = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     quantity = models.PositiveIntegerField(default=1)
 
     class Meta:
@@ -126,7 +133,7 @@ class OrderItem(models.Model):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    phone = models.CharField(max_length=50, blank=True)
+    phone = models.CharField(max_length=50, blank=True, default="")
     is_regular_customer = models.BooleanField(default=False, verbose_name="Постійний клієнт")
 
     class Meta:

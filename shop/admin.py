@@ -56,7 +56,7 @@ admin.site.register(OrderItem)
 admin.site.register(UserProfile)
 
 
-# --- Бухгалтерія (Proxy Model) ---
+
 
 class AccountingProxy(Order):
     class Meta:
