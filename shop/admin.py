@@ -1,19 +1,62 @@
 from django.contrib import admin
-from .models import Product, FoodCategory, CartItem, Order, OrderItem, UserProfile, StoreSettings
-
-
-admin.site.register(FoodCategory)
-admin.site.register(Product)
-admin.site.register(CartItem)
-admin.site.register(Order)
-admin.site.register(OrderItem)
-admin.site.register(UserProfile)
-admin.site.register(StoreSettings)
-
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth
 
+from .models import (
+    Product,
+    FoodCategory,
+    CartItem,
+    Order,
+    OrderItem,
+    UserProfile,
+    StoreSettings,
+    PaymentCard
+)
 
+
+@admin.register(StoreSettings)
+class StoreSettingsAdmin(admin.ModelAdmin):
+    list_display = ('menu_price', 'admin_telegram_ids')
+
+
+@admin.register(PaymentCard)
+class PaymentCardAdmin(admin.ModelAdmin):
+    list_display = ('title', 'card_number', 'is_active')
+    list_editable = ('is_active',)
+
+
+@admin.register(FoodCategory)
+class FoodCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'category_type')
+    list_filter = ('category_type',)
+
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ('title', 'category', 'price', 'extra_price', 'weight_or_portion')
+    list_filter = ('category', 'category__category_type')
+    search_fields = ('title', 'description')
+
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
+
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'total_price', 'payment_method', 'selected_card', 'status', 'created_at')
+    list_filter = ('status', 'payment_method', 'created_at')
+    search_fields = ('user__username', 'phone', 'address')
+    inlines = [OrderItemInline]
+
+
+admin.site.register(CartItem)
+admin.site.register(OrderItem)
+admin.site.register(UserProfile)
+
+
+# --- Бухгалтерія (Proxy Model) ---
 
 class AccountingProxy(Order):
     class Meta:
@@ -34,7 +77,6 @@ class AccountingAdmin(admin.ModelAdmin):
         except (AttributeError, KeyError):
             return response
 
-
         client_monthly_stats = (
             qs.annotate(month=TruncMonth('created_at'))
             .values('month', 'user__username', 'user__first_name', 'user__last_name')
@@ -44,7 +86,6 @@ class AccountingAdmin(admin.ModelAdmin):
             )
             .order_by('-month', '-total_orders')
         )
-
 
         product_stats = (
             OrderItem.objects.filter(order__in=qs)

@@ -146,6 +146,11 @@
             margin: 0;
         }
 
+        .card-select-box {
+            margin-top: 12px;
+            display: none;
+        }
+
         .btn-submit {
             width: 100%;
             background: var(--accent-gold);
@@ -178,7 +183,13 @@
             {% for item in cart_items %}
                 <div class="order-item">
                     <span>{{ item.product.title }} (x{{ item.quantity }})</span>
-                    <span>{{ item.get_total_price }}€</span>
+                    <span>
+                        {% if item.product.category.category_type == 'base' %}
+                            (Меню / Додаткова)
+                        {% else %}
+                            {{ item.product.price }}€
+                        {% endif %}
+                    </span>
                 </div>
             {% endfor %}
             <div class="total-price">
@@ -219,6 +230,17 @@
                             <label for="pay_card">💳 Карткою</label>
                         </div>
                     </div>
+
+                    <div class="card-select-box" id="card_select_container">
+                        <label style="margin-top: 10px;">Оберіть картку для переказу:</label>
+                        <select name="selected_card" class="form-control">
+                            {% for card in cards %}
+                                <option value="{{ card.id }}">{{ card.title }} ({{ card.card_number }})</option>
+                            {% empty %}
+                                <option value="">Немає доступних карток</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -236,6 +258,13 @@
             document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
             document.getElementById('pay_' + method).checked = true;
+
+            const cardBox = document.getElementById('card_select_container');
+            if (method === 'card') {
+                cardBox.style.display = 'block';
+            } else {
+                cardBox.style.display = 'none';
+            }
         }
     </script>
 </body>

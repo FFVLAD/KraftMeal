@@ -1,11 +1,9 @@
-
 import requests
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import JsonResponse
-
 from django.contrib.auth.decorators import login_required
 
 from .models import (
@@ -15,25 +13,83 @@ from .models import (
     Order,
     OrderItem,
     UserProfile,
-    StoreSettings
+    StoreSettings,
+    PaymentCard
 )
 
 TELEGRAM_BOT_TOKEN = "8605046875:AAEIdjsRa6_CbUq2VgSSfqjegYKR_YhLGR4"
 
 
 def get_settings():
-
     settings_obj, _ = StoreSettings.objects.get_or_create(id=1)
     return settings_obj
 
 
-def send_telegram_order(order, items_text, profile):
+def calculate_cart_total(user):
+    """
+    Калькулятор комплексного меню:
+    - Збирає товари за Базовими категоріями.
+    - Кожен повний набір (по 1 страві з УСІХ базових категорій) = Ціна Меню (напр. 10€).
+    - Всі залишки базових страв рахуються за extra_price.
+    - Товари з простих категорій рахуються за стандартною price.
+    """
+    cart_items = CartItem.objects.filter(user=user).select_related('product', 'product__category')
+    if not cart_items.exists():
+        return 0.0
 
+    settings_obj = get_settings()
+    menu_price = float(settings_obj.menu_price)
+
+    base_categories = list(FoodCategory.objects.filter(category_type='base'))
+    num_base_cats = len(base_categories)
+
+    total_sum = 0.0
+
+    if num_base_cats > 0:
+        base_cat_counts = {cat.id: 0 for cat in base_categories}
+        base_items = []
+
+        for item in cart_items:
+            cat = item.product.category
+            if cat.category_type == 'base':
+                base_cat_counts[cat.id] = base_cat_counts.get(cat.id, 0) + item.quantity
+                for _ in range(item.quantity):
+                    base_items.append(item.product)
+            else:
+                total_sum += float(item.product.price) * item.quantity
+
+        full_menus_count = min(base_cat_counts.values()) if base_cat_counts else 0
+        total_sum += full_menus_count * menu_price
+
+        if full_menus_count > 0:
+            used_per_cat = {cat.id: full_menus_count for cat in base_categories}
+            for prod in base_items:
+                cat_id = prod.category.id
+                if used_per_cat[cat_id] > 0:
+                    used_per_cat[cat_id] -= 1
+                else:
+                    total_sum += float(prod.extra_price)
+        else:
+            for prod in base_items:
+                total_sum += float(prod.extra_price)
+    else:
+        for item in cart_items:
+            total_sum += float(item.product.price) * item.quantity
+
+    return round(total_sum, 2)
+
+
+def send_telegram_order(order, items_text, profile):
     settings_obj = get_settings()
     admin_ids = settings_obj.get_admin_ids_list()
 
     regular_badge = "⭐ Постійний клієнт" if getattr(profile, 'is_regular_customer', False) else "👤 Клієнт"
-    pay_badge = "💳 Карткою" if order.payment_method == 'card' else "💵 Готівкою"
+
+    if order.payment_method == 'card':
+        card_info = f"{order.selected_card.title} ({order.selected_card.card_number})" if order.selected_card else "Не вказано"
+        pay_badge = f"💳 Карткою на: <b>{card_info}</b>"
+    else:
+        pay_badge = "💵 Готівкою"
 
     message = (
         f"<b>🛒 НОВЕ ЗАМОВЛЕННЯ #{order.id} [KraftMeal]</b>\n"
@@ -45,7 +101,7 @@ def send_telegram_order(order, items_text, profile):
         f"<b>Бажаний час:</b> {order.delivery_time}\n"
         f"<b>Оплата:</b> {pay_badge}\n"
         f"<b>Сума:</b> {order.total_price}€\n\n"
-        f"<b>Склад замовлення:</b>\n{items_text}\n"
+        f"<b>Склад замовлення:</b>\n{items_text}\n\n"
         f"<b>Коментар:</b> {order.comment or 'Немає'}"
     )
 
@@ -73,7 +129,6 @@ def send_telegram_order(order, items_text, profile):
 
 
 def index(request):
-
     categories = FoodCategory.objects.all()
 
     selected_cat = request.GET.get('category')
@@ -90,11 +145,9 @@ def index(request):
     if request.user.is_authenticated:
         cart_items = CartItem.objects.filter(user=request.user)
         user_cart_ids = list(cart_items.values_list('product_id', flat=True))
-
         cart_items_count = cart_items.count()
-        cart_total = sum(item.get_total_price() for item in cart_items)
+        cart_total = calculate_cart_total(request.user)
 
-        # Останнє активне замовлення, яке НЕ приховане клієнтом
         active_order = Order.objects.filter(user=request.user, is_dismissed=False).last()
 
     context = {
@@ -104,21 +157,19 @@ def index(request):
         'active_order': active_order,
         'user_cart_ids': user_cart_ids,
         'cart_items_count': cart_items_count,
-        'cart_total': round(float(cart_total), 2),
+        'cart_total': cart_total,
     }
 
     return render(request, 'shop/index.html', context)
 
 
 def product_detail(request, product_id):
-
     product = get_object_or_404(Product, id=product_id)
     return render(request, 'shop/product_detail.html', {'product': product})
 
 
 @login_required
 def dismiss_order(request, order_id):
-
     if request.method == 'POST':
         try:
             order = Order.objects.get(id=order_id, user=request.user)
@@ -132,7 +183,6 @@ def dismiss_order(request, order_id):
 
 @login_required
 def toggle_cart(request, product_id):
-
     if request.method == 'POST':
         product = get_object_or_404(Product, id=product_id)
         item, created = CartItem.objects.get_or_create(user=request.user, product=product)
@@ -144,7 +194,7 @@ def toggle_cart(request, product_id):
             status = 'added'
 
         cart_qs = CartItem.objects.filter(user=request.user)
-        cart_total = sum(i.get_total_price() for i in cart_qs)
+        cart_total = calculate_cart_total(request.user)
 
         return JsonResponse({
             'status': status,
@@ -156,13 +206,13 @@ def toggle_cart(request, product_id):
 
 @login_required
 def checkout(request):
-
     cart_items = CartItem.objects.filter(user=request.user)
     if not cart_items.exists():
         return redirect('index')
 
-    cart_total = sum(item.get_total_price() for item in cart_items)
+    cart_total = calculate_cart_total(request.user)
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    cards = PaymentCard.objects.filter(is_active=True)
 
     if request.method == 'POST':
         address = request.POST.get('address')
@@ -170,7 +220,11 @@ def checkout(request):
         delivery_time = request.POST.get('delivery_time')
         comment = request.POST.get('comment', '')
         payment_method = request.POST.get('payment_method', 'cash')
+        card_id = request.POST.get('selected_card')
 
+        selected_card_obj = None
+        if payment_method == 'card' and card_id:
+            selected_card_obj = PaymentCard.objects.filter(id=card_id).first()
 
         order = Order.objects.create(
             user=request.user,
@@ -180,9 +234,9 @@ def checkout(request):
             comment=comment,
             total_price=cart_total,
             payment_method=payment_method,
+            selected_card=selected_card_obj,
             status='pending'
         )
-
 
         items_text_list = []
         for c_item in cart_items:
@@ -192,47 +246,40 @@ def checkout(request):
                 price=c_item.product.price,
                 quantity=c_item.quantity
             )
-            items_text_list.append(f"• {c_item.product.title} (x{c_item.quantity}) - {c_item.get_total_price()}€")
-
+            items_text_list.append(f"• {c_item.product.title} (x{c_item.quantity})")
 
         cart_items.delete()
-
 
         profile.phone = phone
         profile.save()
 
-
-        if payment_method == 'cash':
-            try:
-                items_formatted_text = "\n".join(items_text_list)
-                send_telegram_order(order, items_formatted_text, profile)
-            except Exception as e:
-                print(f"Error sending order to Telegram: {e}")
-
+        try:
+            items_formatted_text = "\n".join(items_text_list)
+            send_telegram_order(order, items_formatted_text, profile)
+        except Exception as e:
+            print(f"Error sending order to Telegram: {e}")
 
         return redirect('order_success', order_id=order.id)
 
     context = {
         'cart_items': cart_items,
         'cart_total': cart_total,
-        'profile': profile
+        'profile': profile,
+        'cards': cards
     }
     return render(request, 'shop/checkout.html', context)
 
 
 @login_required
 def order_success(request, order_id):
-
     order = get_object_or_404(Order, id=order_id, user=request.user)
-    settings_obj = get_settings()
     return render(request, 'shop/order_success.html', {
         'order': order,
-        'card_number': settings_obj.card_number
+        'card': order.selected_card
     })
 
 
 def login_view(request):
-
     if request.user.is_authenticated:
         return redirect('index')
 
@@ -251,7 +298,6 @@ def login_view(request):
 
 
 def register_view(request):
-
     if request.user.is_authenticated:
         return redirect('index')
 
@@ -280,6 +326,5 @@ def register_view(request):
 
 
 def logout_view(request):
-
     logout(request)
     return redirect('index')

@@ -1,15 +1,15 @@
 import os
 import sys
-
 from telebot import TeleBot, types
-
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 
+import django
+
+django.setup()
 
 from shop.models import Order, UserProfile, StoreSettings
-
 
 TOKEN = os.environ.get('BOT_TOKEN', '8605046875:AAEIdjsRa6_CbUq2VgSSfqjegYKR_YhLGR4')
 bot = TeleBot(TOKEN)
@@ -22,12 +22,16 @@ def format_order_text(order):
     items_text = ""
 
     for item in items:
-        item_total = item.price * item.quantity
-        items_text += f"• {item.product.title} (x{item.quantity}) — {item_total}€\n"
+        items_text += f"• {item.product.title} (x{item.quantity})\n"
 
     profile, _ = UserProfile.objects.get_or_create(user=order.user)
     regular_badge = "⭐ Постійний клієнт" if getattr(profile, 'is_regular_customer', False) else "👤 Клієнт"
-    pay_badge = "💳 Карткою" if order.payment_method == 'card' else "💵 Готівкою"
+
+    if order.payment_method == 'card':
+        card_info = f"{order.selected_card.title} ({order.selected_card.card_number})" if order.selected_card else "Не вказано"
+        pay_badge = f"💳 Карткою на: <b>{card_info}</b>"
+    else:
+        pay_badge = "💵 Готівкою"
 
     text = (
         f"🛒 <b>НОВЕ ЗАМОВЛЕННЯ #{order.id} [KraftMeal]</b>\n"
@@ -46,7 +50,6 @@ def format_order_text(order):
 
 
 def get_admin_keyboard(order_id):
-
     keyboard = types.InlineKeyboardMarkup(row_width=2)
     btn_confirm = types.InlineKeyboardButton("✅ Прийняти", callback_data=f"confirm_{order_id}")
     btn_cancel = types.InlineKeyboardButton("❌ Відхилити", callback_data=f"cancel_{order_id}")
@@ -121,45 +124,59 @@ def handle_photo_receipt(message):
 def callback_handler(call):
     if call.data.startswith("confirm_"):
         order_id = call.data.split("_")[1]
-        try:
-            order = Order.objects.get(id=order_id)
-            order.status = 'confirmed'
-            order.cancel_reason = None
-            order.save()
+        bot.answer_callback_query(call.id)
 
-            bot.answer_callback_query(call.id, "Замовлення підтверджено!")
-            status_text = "\n\n🟢 <b>СТАТУС: ПРИЙНЯТО</b>"
-
-            if call.message.photo or call.message.caption is not None:
-                current_caption = call.message.caption or ""
-                bot.edit_message_caption(
-                    chat_id=call.message.chat.id,
-                    message_id=call.message.message_id,
-                    caption=current_caption + status_text,
-                    parse_mode='HTML'
-                )
-
-            else:
-                current_text = call.message.text or ""
-                bot.edit_message_text(
-                    chat_id=call.message.chat.id,
-                    message_id=call.message.message_id,
-                    text=current_text + status_text,
-                    parse_mode='HTML'
-                )
-
-        except Order.DoesNotExist:
-            bot.answer_callback_query(call.id, "Замовлення не знайдено.")
+        msg = bot.send_message(
+            call.message.chat.id,
+            f"⏱ Введіть **орієнтовний час доставки** для замовлення #{order_id} (наприклад: '30-40 хв' або 'до 19:30'):"
+        )
+        bot.register_next_step_handler(msg, process_delivery_time, order_id, call.message)
 
     elif call.data.startswith("cancel_"):
         order_id = call.data.split("_")[1]
         admin_waiting_reason[call.from_user.id] = order_id
+        bot.answer_callback_query(call.id)
 
         msg = bot.send_message(
             call.message.chat.id,
             f"✍️ Напишіть **причину відмови** для замовлення #{order_id}:"
         )
         bot.register_next_step_handler(msg, process_rejection_reason, order_id, call.message)
+
+
+def process_delivery_time(message, order_id, original_msg):
+    est_time = message.text.strip()
+    try:
+        order = Order.objects.get(id=order_id)
+        order.status = 'confirmed'
+        order.estimated_delivery_time = est_time
+        order.cancel_reason = None
+        order.save()
+
+        status_text = f"\n\n🟢 <b>СТАТУС: ПРИЙНЯТО</b>\n⏱ <b>Очікуваний час доставки:</b> {est_time}"
+
+        if original_msg.photo or original_msg.caption is not None:
+            current_caption = original_msg.caption or ""
+            bot.edit_message_caption(
+                chat_id=original_msg.chat.id,
+                message_id=original_msg.message_id,
+                caption=current_caption + status_text,
+                parse_mode='HTML'
+            )
+        else:
+            current_text = original_msg.text or ""
+            bot.edit_message_text(
+                chat_id=original_msg.chat.id,
+                message_id=original_msg.message_id,
+                text=current_text + status_text,
+                parse_mode='HTML'
+            )
+
+        bot.send_message(message.chat.id,
+                         f"✅ Замовлення #{order_id} підтверджено! Час доставки ({est_time}) збережено.")
+
+    except Order.DoesNotExist:
+        bot.send_message(message.chat.id, "Замовлення не знайдено.")
 
 
 def process_rejection_reason(message, order_id, original_msg):
@@ -181,7 +198,6 @@ def process_rejection_reason(message, order_id, original_msg):
                 caption=current_caption + status_text,
                 parse_mode='HTML'
             )
-
         else:
             current_text = original_msg.text or ""
             bot.edit_message_text(
@@ -195,7 +211,6 @@ def process_rejection_reason(message, order_id, original_msg):
 
     except Order.DoesNotExist:
         bot.send_message(message.chat.id, "Замовлення не знайдено.")
-
 
 
 def run_bot():
