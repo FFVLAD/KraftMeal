@@ -3,15 +3,6 @@ import sys
 from telebot import TeleBot, types
 
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
-
-import django
-from django.apps import apps
-
-if not apps.ready:
-    django.setup()
-
 from shop.models import Order, UserProfile, StoreSettings
 
 TOKEN = os.environ.get('BOT_TOKEN', '8605046875:AAEIdjsRa6_CbUq2VgSSfqjegYKR_YhLGR4')
