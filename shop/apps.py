@@ -10,7 +10,8 @@ class ShopConfig(AppConfig):
 
     def ready(self):
 
-        if any(arg in sys.argv for arg in ['collectstatic', 'makemigrations', 'migrate']):
+        cli_commands = ['createsuperuser', 'collectstatic', 'makemigrations', 'migrate', 'shell']
+        if any(arg in sys.argv for arg in cli_commands):
             return
 
 
