@@ -16,11 +16,14 @@ class ShopConfig(AppConfig):
 
 
         if os.environ.get('RENDER'):
-            try:
-                from .bot import run_bot
 
-                bot_thread = threading.Thread(target=run_bot, daemon=True)
-                bot_thread.start()
-                print("🚀 Фоновий потік Telegram-бота успішно стартував!")
-            except Exception as e:
-                print(f"⚠️ Помилка старту фонового бота: {e}")
+            if not os.environ.get('KRAFTMEAL_BOT_STARTED'):
+                os.environ['KRAFTMEAL_BOT_STARTED'] = 'true'
+                try:
+                    from .bot import run_bot
+
+                    bot_thread = threading.Thread(target=run_bot, daemon=True)
+                    bot_thread.start()
+                    print("🚀 Фоновий потік Telegram-бота успішно стартував!")
+                except Exception as e:
+                    print(f"⚠️ Помилка старту фонового бота: {e}")

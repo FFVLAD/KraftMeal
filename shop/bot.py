@@ -2,7 +2,6 @@ import os
 import sys
 from telebot import TeleBot, types
 
-
 from shop.models import Order, UserProfile, StoreSettings
 
 TOKEN = os.environ.get('BOT_TOKEN', '8605046875:AAEIdjsRa6_CbUq2VgSSfqjegYKR_YhLGR4')
