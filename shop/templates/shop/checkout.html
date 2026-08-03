@@ -73,9 +73,77 @@
         .order-item {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
+            align-items: center;
+            padding: 12px 0;
             border-bottom: 1px solid rgba(255,255,255,0.08);
             font-size: 14px;
+        }
+
+        .item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            max-width: 60%;
+        }
+
+        .item-title {
+            font-weight: 700;
+        }
+
+        .item-subtext {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(242, 189, 66, 0.2);
+        }
+
+        .qty-btn {
+            background: transparent;
+            border: none;
+            color: var(--accent-gold);
+            font-size: 16px;
+            font-weight: 800;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.15s;
+        }
+
+        .qty-btn:hover {
+            background: rgba(242, 189, 66, 0.2);
+        }
+
+        .qty-count {
+            font-weight: 800;
+            font-size: 14px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        .btn-delete {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 4px;
+            opacity: 0.6;
+            transition: 0.2s;
+        }
+
+        .btn-delete:hover {
+            opacity: 1.0;
         }
 
         .total-price {
@@ -180,21 +248,35 @@
     <div class="container">
         <div class="card">
             <h2>🛒 Ваше замовлення</h2>
-            {% for item in cart_items %}
-                <div class="order-item">
-                    <span>{{ item.product.title }} (x{{ item.quantity }})</span>
-                    <span>
-                        {% if item.product.category.category_type == 'base' %}
-                            (Меню / Додаткова)
-                        {% else %}
-                            {{ item.product.price }}€
-                        {% endif %}
-                    </span>
-                </div>
-            {% endfor %}
+            <div id="cart-items-container">
+                {% for item in cart_items %}
+                    <div class="order-item" id="order-item-{{ item.id }}">
+                        <div class="item-info">
+                            <span class="item-title">{{ item.product.title }}</span>
+                            <span class="item-subtext">
+                                {% if item.product.category.category_type == 'base' %}
+                                    (Меню / Додаткова)
+                                {% else %}
+                                    {{ item.product.price }}€
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div class="qty-controls">
+                                <button type="button" class="qty-btn" onclick="updateQty({{ item.id }}, 'decrease')">-</button>
+                                <span class="qty-count" id="qty-val-{{ item.id }}">{{ item.quantity }}</span>
+                                <button type="button" class="qty-btn" onclick="updateQty({{ item.id }}, 'increase')">+</button>
+                            </div>
+                            <button type="button" class="btn-delete" title="Видалити" onclick="updateQty({{ item.id }}, 'remove')">🗑️</button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
             <div class="total-price">
                 <span>Всього до сплати:</span>
-                <span>{{ cart_total }}€</span>
+                <span id="cart-total-display">{{ cart_total }}€</span>
             </div>
         </div>
 
@@ -248,7 +330,7 @@
                     <textarea name="comment" class="form-control" rows="2" placeholder="Код від під'їзду або побажання..."></textarea>
                 </div>
 
-                <button type="submit" class="btn-submit">Підтвердити замовлення ({{ cart_total }}€)</button>
+                <button type="submit" class="btn-submit" id="submit-btn">Підтвердити замовлення (<span id="btn-total-display">{{ cart_total }}</span>€)</button>
             </div>
         </form>
     </div>
@@ -265,6 +347,38 @@
             } else {
                 cardBox.style.display = 'none';
             }
+        }
+
+        function updateQty(itemId, action) {
+            const formData = new FormData();
+            formData.append('action', action);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+            fetch(`/cart/update/${itemId}/`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    if (data.remaining_items === 0) {
+                        window.location.href = "{% url 'index' %}";
+                        return;
+                    }
+
+                    if (data.quantity > 0) {
+                        document.getElementById(`qty-val-${itemId}`).innerText = data.quantity;
+                    } else {
+                        const itemElement = document.getElementById(`order-item-${itemId}`);
+                        if (itemElement) itemElement.remove();
+                    }
+
+                    const formattedTotal = data.cart_total.toFixed(2);
+                    document.getElementById('cart-total-display').innerText = `${formattedTotal}€`;
+                    document.getElementById('btn-total-display').innerText = formattedTotal;
+                }
+            })
+            .catch(err => console.error(err));
         }
     </script>
 </body>

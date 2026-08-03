@@ -205,8 +205,42 @@ def toggle_cart(request, product_id):
 
 
 @login_required
+def update_cart_quantity(request, item_id):
+    """ Зміна кількості або видалення позиції у кошику """
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        cart_item = get_object_or_404(CartItem, id=item_id, user=request.user)
+
+        if action == 'increase':
+            cart_item.quantity += 1
+            cart_item.save()
+        elif action == 'decrease':
+            if cart_item.quantity > 1:
+                cart_item.quantity -= 1
+                cart_item.save()
+            else:
+                cart_item.delete()
+                cart_item = None
+        elif action == 'remove':
+            cart_item.delete()
+            cart_item = None
+
+        cart_total = calculate_cart_total(request.user)
+        remaining_items = CartItem.objects.filter(user=request.user).count()
+
+        return JsonResponse({
+            'status': 'ok',
+            'quantity': cart_item.quantity if cart_item else 0,
+            'cart_total': float(cart_total),
+            'remaining_items': remaining_items
+        })
+
+    return JsonResponse({'status': 'error'}, status=400)
+
+
+@login_required
 def checkout(request):
-    cart_items = CartItem.objects.filter(user=request.user)
+    cart_items = CartItem.objects.filter(user=request.user).select_related('product', 'product__category')
     if not cart_items.exists():
         return redirect('index')
 
@@ -315,7 +349,7 @@ def register_view(request):
             messages.error(request, 'Користувач з таким логіном вже існує!')
             return render(request, 'shop/register.html')
 
-        user = User.objects.create_user(username=username, email=email, password=password)
+        user = User.User.create_user(username=username, email=email, password=password)
         user.save()
 
         login(request, user)
