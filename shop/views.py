@@ -367,8 +367,8 @@ def logout_view(request):
 
 @login_required
 def profile_view(request):
-    """ Сторінка особистого кабінету з історією замовлень """
-    orders = Order.objects.filter(user=request.user).prefetch_related('items__product').order_order_by('-created_at')
+
+    orders = Order.objects.filter(user=request.user).prefetch_related('items__product').order_by('-created_at')
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
     return render(request, 'shop/profile.html', {
