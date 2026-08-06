@@ -28,6 +28,8 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            /* Додаємо відступ знизу, щоб зафіксована кнопка не перекривала вміст сторінки */
+            padding-bottom: 90px;
         }
 
         .bg-watermark {
@@ -163,7 +165,6 @@
             color: #c0cbba;
             font-weight: 400;
         }
-
 
         .active-order-card {
             background: var(--banner-bg);
@@ -310,10 +311,13 @@
             border: 1px solid var(--accent-gold);
         }
 
+
         .cart-bar {
-            position: relative;
-            margin: 35px auto 10px;
-            width: 100%;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 32px);
             max-width: 550px;
             background: var(--accent-gold);
             color: #111a14;
@@ -322,17 +326,22 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             text-decoration: none;
             font-weight: 800;
             font-size: 16px;
-            z-index: 10;
+            z-index: 1000;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .cart-bar:hover {
+            transform: translateX(-50%) scale(1.02);
         }
 
         footer {
             background: #0f1712;
             text-align: center;
-            padding: 14px;
+            padding: 20px 14px 20px;
             font-size: 11px;
             color: #8c9987;
             margin-top: auto;
@@ -350,6 +359,11 @@
             .hero-banner h1 { font-size: 20px; }
             .hero-banner .sub { font-size: 24px; }
             .products-grid { grid-template-columns: 1fr; }
+            .cart-bar {
+                bottom: 14px;
+                padding: 12px 18px;
+                font-size: 15px;
+            }
         }
     </style>
 </head>
@@ -408,7 +422,6 @@
                 <p style="font-size: 15px; font-weight: 800; color: var(--accent-gold); margin: 0;">
                     Сума: {{ active_order.total_price }}€
                 </p>
-
 
                 {% if active_order.status == 'confirmed' or active_order.status == 'canceled' or active_order.status == 'cancelled' %}
                     <button class="btn-dismiss" onclick="dismissOrder({{ active_order.id }})">
@@ -495,7 +508,6 @@
         .then(res => res.json())
         .then(data => {
             if (data.status === 'added' || data.status === 'removed') {
-
                 location.reload();
             } else if (data.status === 'unauthorized') {
                 window.location.href = "{% url 'login' %}";
@@ -505,7 +517,6 @@
     }
 
     function dismissOrder(orderId) {
-
         const orderCard = document.getElementById('active-order');
         if (orderCard) {
             orderCard.style.display = 'none';
