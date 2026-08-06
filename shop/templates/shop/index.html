@@ -28,7 +28,6 @@
             display: flex;
             flex-direction: column;
             position: relative;
-            /* Додаємо відступ знизу, щоб зафіксована кнопка не перекривала вміст сторінки */
             padding-bottom: 90px;
         }
 
@@ -311,7 +310,6 @@
             border: 1px solid var(--accent-gold);
         }
 
-
         .cart-bar {
             position: fixed;
             bottom: 20px;
@@ -331,17 +329,34 @@
             font-weight: 800;
             font-size: 16px;
             z-index: 1000;
-            transition: transform 0.2s ease, opacity 0.2s ease;
+            transition: transform 0.2s ease;
         }
 
         .cart-bar:hover {
             transform: translateX(-50%) scale(1.02);
         }
 
+
+        .flying-item {
+            position: fixed;
+            z-index: 9999;
+            width: 36px;
+            height: 36px;
+            background: var(--accent-gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            pointer-events: none;
+            transition: all 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        }
+
         footer {
             background: #0f1712;
             text-align: center;
-            padding: 20px 14px 20px;
+            padding: 20px 14px;
             font-size: 11px;
             color: #8c9987;
             margin-top: auto;
@@ -381,7 +396,7 @@
                         {% if active_order.status == 'pending' %}🟡{% elif active_order.status == 'confirmed' %}✅{% else %}❌{% endif %}
                     </a>
                 {% endif %}
-                <span class="username">{{ user.username }}</span>
+                <a href="{% url 'profile' %}" class="username">👤 {{ user.username }}</a>
                 {% if user.is_staff %}
                     <a href="/admin/">Панель</a>
                 {% endif %}
@@ -469,7 +484,7 @@
                             </div>
 
                             {% if user.is_authenticated %}
-                                <button class="btn-add {% if product.id in user_cart_ids %}in-cart{% endif %}" onclick="toggleCart({{ product.id }})">
+                                <button class="btn-add {% if product.id in user_cart_ids %}in-cart{% endif %}" onclick="toggleCart({{ product.id }}, event)">
                                     {% if product.id in user_cart_ids %}✓ У кошику{% else %}Замовити{% endif %}
                                 </button>
                             {% else %}
@@ -497,7 +512,9 @@
 </footer>
 
 <script>
-    function toggleCart(productId) {
+    function toggleCart(productId, event) {
+        const btn = event ? event.currentTarget : null;
+
         fetch(`/toggle_cart/${productId}/`, {
             method: 'POST',
             headers: {
@@ -507,13 +524,41 @@
         })
         .then(res => res.json())
         .then(data => {
-            if (data.status === 'added' || data.status === 'removed') {
+            if (data.status === 'added') {
+                if (btn) animateToCart(btn);
+                setTimeout(() => location.reload(), 550);
+            } else if (data.status === 'removed') {
                 location.reload();
             } else if (data.status === 'unauthorized') {
                 window.location.href = "{% url 'login' %}";
             }
         })
         .catch(err => console.error('Помилка додавання в кошик:', err));
+    }
+
+    function animateToCart(button) {
+        const cartBar = document.getElementById('cartBar') || document.querySelector('header');
+        if (!cartBar) return;
+
+        const btnRect = button.getBoundingClientRect();
+        const cartRect = cartBar.getBoundingClientRect();
+
+        const flyer = document.createElement('div');
+        flyer.className = 'flying-item';
+        flyer.innerHTML = '🍲';
+        flyer.style.left = `${btnRect.left + btnRect.width / 2 - 18}px`;
+        flyer.style.top = `${btnRect.top + btnRect.height / 2 - 18}px`;
+
+        document.body.appendChild(flyer);
+
+        requestAnimationFrame(() => {
+            flyer.style.left = `${cartRect.left + cartRect.width / 2 - 18}px`;
+            flyer.style.top = `${cartRect.top + cartRect.height / 2 - 18}px`;
+            flyer.style.transform = 'scale(0.3)';
+            flyer.style.opacity = '0.3';
+        });
+
+        setTimeout(() => flyer.remove(), 600);
     }
 
     function dismissOrder(orderId) {
@@ -536,6 +581,34 @@
         .catch(err => console.error('Помилка приховання:', err));
     }
 </script>
+
+{% if user.is_staff %}
+<script>
+
+    function playAlertSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(520, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.4);
+
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        } catch (e) {
+            console.log('Помилка відтворення звуку:', e);
+        }
+    }
+</script>
+{% endif %}
 
 </body>
 </html>

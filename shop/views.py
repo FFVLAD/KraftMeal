@@ -363,3 +363,36 @@ def register_view(request):
 def logout_view(request):
     logout(request)
     return redirect('index')
+
+
+@login_required
+def profile_view(request):
+    """ Сторінка особистого кабінету з історією замовлень """
+    orders = Order.objects.filter(user=request.user).prefetch_related('items__product').order_order_by('-created_at')
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+
+    return render(request, 'shop/profile.html', {
+        'orders': orders,
+        'profile': profile
+    })
+
+
+@login_required
+def repeat_order(request, order_id):
+
+    if request.method == 'POST':
+        old_order = get_object_or_404(Order, id=order_id, user=request.user)
+
+
+        CartItem.objects.filter(user=request.user).delete()
+
+
+        for item in old_order.items.all():
+            CartItem.objects.create(
+                user=request.user,
+                product=item.product,
+                quantity=item.quantity
+            )
+
+        return JsonResponse({'status': 'ok'})
+    return JsonResponse({'status': 'error'}, status=400)
