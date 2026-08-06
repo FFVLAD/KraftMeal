@@ -349,7 +349,8 @@ def register_view(request):
             messages.error(request, 'Користувач з таким логіном вже існує!')
             return render(request, 'shop/register.html')
 
-        user = User.User.create_user(username=username, email=email, password=password)
+
+        user = User.objects.create_user(username=username, email=email, password=password)
         user.save()
 
         login(request, user)
