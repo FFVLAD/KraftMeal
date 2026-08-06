@@ -28,7 +28,6 @@
             display: flex;
             flex-direction: column;
             position: relative;
-            padding-bottom: 90px;
         }
 
         .bg-watermark {
@@ -101,7 +100,7 @@
         .container {
             max-width: 1150px;
             margin: 0 auto;
-            padding: 24px 20px 40px;
+            padding: 24px 20px 20px;
             width: 100%;
             position: relative;
             z-index: 1;
@@ -310,12 +309,12 @@
             border: 1px solid var(--accent-gold);
         }
 
+
         .cart-bar {
-            position: fixed;
+            position: sticky;
             bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 32px);
+            margin: 30px auto 10px;
+            width: 100%;
             max-width: 550px;
             background: var(--accent-gold);
             color: #111a14;
@@ -328,12 +327,12 @@
             text-decoration: none;
             font-weight: 800;
             font-size: 16px;
-            z-index: 1000;
+            z-index: 100;
             transition: transform 0.2s ease;
         }
 
         .cart-bar:hover {
-            transform: translateX(-50%) scale(1.02);
+            transform: scale(1.02);
         }
 
 
@@ -356,7 +355,7 @@
         footer {
             background: #0f1712;
             text-align: center;
-            padding: 20px 14px;
+            padding: 24px 14px;
             font-size: 11px;
             color: #8c9987;
             margin-top: auto;
@@ -584,7 +583,6 @@
 
 {% if user.is_staff %}
 <script>
-
     function playAlertSound() {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
