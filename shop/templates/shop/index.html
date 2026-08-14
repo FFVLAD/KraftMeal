@@ -278,29 +278,25 @@
 
         .product-foot {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             padding-top: 12px;
             border-top: 1px solid rgba(255,255,255,0.06);
         }
 
-        .price {
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--accent-gold);
-        }
-
         .btn-add {
             background: var(--accent-gold);
             color: #111a14;
-            padding: 9px 18px;
-            border-radius: 10px;
+            padding: 10px 24px;
+            border-radius: 12px;
             text-decoration: none;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 800;
             border: none;
             cursor: pointer;
             transition: 0.2s;
+            width: 100%;
+            text-align: center;
         }
 
         .btn-add.in-cart {
@@ -308,7 +304,6 @@
             color: var(--accent-gold);
             border: 1px solid var(--accent-gold);
         }
-
 
         .cart-bar {
             position: sticky;
@@ -334,7 +329,6 @@
         .cart-bar:hover {
             transform: scale(1.02);
         }
-
 
         .flying-item {
             position: fixed;
@@ -478,10 +472,6 @@
                         <p class="product-desc">{{ product.description }}</p>
 
                         <div class="product-foot">
-                            <div class="price-box">
-                                <span class="price">{{ product.price }}€</span>
-                            </div>
-
                             {% if user.is_authenticated %}
                                 <button class="btn-add {% if product.id in user_cart_ids %}in-cart{% endif %}" onclick="toggleCart({{ product.id }}, event)">
                                     {% if product.id in user_cart_ids %}✓ У кошику{% else %}Замовити{% endif %}
