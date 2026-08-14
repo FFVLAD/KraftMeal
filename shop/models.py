@@ -37,8 +37,23 @@ class FoodCategory(models.Model):
         ('base', 'Базова (входить до створення меню)'),
         ('simple', 'Проста (Заморозка, напої, окремі товари)'),
     )
+    SLUG_CHOICES = (
+        ('garnir', 'Гарнір'),
+        ('main', 'Друга страва'),
+        ('soup', 'Суп'),
+        ('salad', 'Салат'),
+        ('other', 'Інше / Прості товари'),
+    )
+
     name = models.CharField(max_length=100, verbose_name="Назва категорії")
-    category_type = models.CharField(max_length=10, choices=CATEGORY_TYPES, default='base', verbose_name="Тип категорії")
+    slug = models.CharField(
+        max_length=20,
+        choices=SLUG_CHOICES,
+        default='other',
+        verbose_name="Тип страви для розрахунку сетів"
+    )
+    category_type = models.CharField(max_length=10, choices=CATEGORY_TYPES, default='base',
+                                     verbose_name="Тип категорії")
 
     class Meta:
         verbose_name = "Категорія"
@@ -46,7 +61,7 @@ class FoodCategory(models.Model):
 
     def __str__(self):
         type_str = "Базова" if self.category_type == 'base' else "Проста"
-        return f"{self.name} [{type_str}]"
+        return f"{self.name} [{self.get_slug_display()}]"
 
 
 class Product(models.Model):

@@ -26,58 +26,80 @@ def get_settings():
 
 
 def calculate_cart_total(user):
-    """
-    Калькулятор комплексного меню:
-    - Збирає товари за Базовими категоріями.
-    - Кожен повний набір (по 1 страві з УСІХ базових категорій) = Ціна Меню (напр. 10€).
-    - Всі залишки базових страв рахуються за extra_price.
-    - Товари з простих категорій рахуються за стандартною price.
-    """
     cart_items = CartItem.objects.filter(user=user).select_related('product', 'product__category')
     if not cart_items.exists():
         return 0.0
 
-    settings_obj = get_settings()
-    menu_price = float(settings_obj.menu_price)
-
-    base_categories = list(FoodCategory.objects.filter(category_type='base'))
-    num_base_cats = len(base_categories)
+    counts = {
+        'garnir': 0,
+        'main': 0,
+        'soup': 0,
+        'salad': 0
+    }
 
     total_sum = 0.0
 
-    if num_base_cats > 0:
-        base_cat_counts = {cat.id: 0 for cat in base_categories}
-        base_items = []
 
-        for item in cart_items:
-            cat = item.product.category
-            if cat.category_type == 'base':
-                base_cat_counts[cat.id] = base_cat_counts.get(cat.id, 0) + item.quantity
-                for _ in range(item.quantity):
-                    base_items.append(item.product)
-            else:
-                total_sum += float(item.product.price) * item.quantity
+    for item in cart_items:
+        product = item.product
+        cat = product.category
 
-        full_menus_count = min(base_cat_counts.values()) if base_cat_counts else 0
-        total_sum += full_menus_count * menu_price
-
-        if full_menus_count > 0:
-            used_per_cat = {cat.id: full_menus_count for cat in base_categories}
-            for prod in base_items:
-                cat_id = prod.category.id
-                if used_per_cat[cat_id] > 0:
-                    used_per_cat[cat_id] -= 1
-                else:
-                    total_sum += float(prod.extra_price)
+        if cat and cat.slug in counts:
+            counts[cat.slug] += item.quantity
         else:
-            for prod in base_items:
-                total_sum += float(prod.extra_price)
-    else:
+            total_sum += float(product.price) * item.quantity
+
+
+    combo_10 = min(counts['garnir'], counts['main'], counts['salad'], counts['soup'])
+    if combo_10 > 0:
+        total_sum += combo_10 * 10.0
+        counts['garnir'] -= combo_10
+        counts['main'] -= combo_10
+        counts['salad'] -= combo_10
+        counts['soup'] -= combo_10
+
+
+    combo_7_gms = min(counts['garnir'], counts['main'], counts['salad'])
+    if combo_7_gms > 0:
+        total_sum += combo_7_gms * 7.0
+        counts['garnir'] -= combo_7_gms
+        counts['main'] -= combo_7_gms
+        counts['salad'] -= combo_7_gms
+
+
+    combo_7_ss = min(counts['soup'], counts['salad'])
+    if combo_7_ss > 0:
+        total_sum += combo_7_ss * 7.0
+        counts['soup'] -= combo_7_ss
+        counts['salad'] -= combo_7_ss
+
+
+    combo_5_gm = min(counts['garnir'], counts['main'])
+    if combo_5_gm > 0:
+        total_sum += combo_5_gm * 5.0
+        counts['garnir'] -= combo_5_gm
+        counts['main'] -= combo_5_gm
+
+
+    if counts['soup'] > 0:
+        total_sum += counts['soup'] * 5.0
+        counts['soup'] = 0
+
+
+    if counts['salad'] > 0:
+        total_sum += counts['salad'] * 3.0
+        counts['salad'] = 0
+
+
+    if counts['garnir'] > 0 or counts['main'] > 0:
         for item in cart_items:
-            total_sum += float(item.product.price) * item.quantity
+            cat_slug = item.product.category.slug if item.product.category else ''
+            if cat_slug in ['garnir', 'main'] and counts[cat_slug] > 0:
+                take = min(counts[cat_slug], item.quantity)
+                total_sum += take * float(item.product.price)
+                counts[cat_slug] -= take
 
     return round(total_sum, 2)
-
 
 def send_telegram_order(order, items_text, profile):
     settings_obj = get_settings()
