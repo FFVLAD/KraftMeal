@@ -1,5 +1,7 @@
 import os
 import sys
+import gspread
+from google.oauth2.service_account import Credentials
 from telebot import TeleBot, types
 
 from shop.models import Order, UserProfile, StoreSettings
@@ -7,8 +9,60 @@ from shop.models import Order, UserProfile, StoreSettings
 TOKEN = os.environ.get('BOT_TOKEN', '8605046875:AAEIdjsRa6_CbUq2VgSSfqjegYKR_YhLGR4')
 bot = TeleBot(TOKEN)
 
-
 admin_actions = {}
+
+
+def append_order_to_google_sheet(order, est_time):
+    try:
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
+
+
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        creds_path = os.path.join(base_dir, 'credentials.json')
+
+        if not os.path.exists(creds_path):
+            creds_path = 'credentials.json'
+
+        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+        client = gspread.authorize(creds)
+
+
+        spreadsheet_id = "1A6l5t-sMklrhORoV7K-U73OFpa7EQZLseSz0r5jkNgs"
+        sheet = client.open_by_key(spreadsheet_id).sheet1
+
+
+        items_list = [f"{item.product.title} (x{item.quantity})" for item in order.items.all()]
+        items_text = ", ".join(items_list)
+
+
+        if order.payment_method == 'card':
+            card_title = order.selected_card.title if order.selected_card else 'Не вказано'
+            pay_text = f"Картка ({card_title})"
+        else:
+            pay_text = "Готівка"
+
+
+        row = [
+            order.id,
+            order.created_at.strftime("%Y-%m-%d %H:%M") if hasattr(order, 'created_at') and order.created_at else "",
+            order.user.username,
+            str(order.phone),
+            order.address,
+            order.delivery_time,
+            est_time,
+            items_text,
+            float(order.total_price),
+            pay_text,
+            order.comment or ""
+        ]
+
+        sheet.append_row(row)
+        print(f"✅ Замовлення #{order.id} успішно додано в Google Sheets!")
+    except Exception as e:
+        print(f"❌ Помилка запису в Google Sheets: {e}")
 
 
 def format_order_text(order):
@@ -116,7 +170,6 @@ def handle_photo_receipt(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
-
     bot.answer_callback_query(call.id)
 
     if call.data.startswith("confirm_"):
@@ -148,8 +201,10 @@ def process_delivery_time(message, order_id, original_msg):
         order.cancel_reason = None
         order.save()
 
-        status_text = f"\n\n🟢 <b>СТАТУС: ПРИЙНЯТО</b>\n⏱ <b>Очікуваний час доставки:</b> {est_time}"
 
+        append_order_to_google_sheet(order, est_time)
+
+        status_text = f"\n\n🟢 <b>СТАТУС: ПРИЙНЯТО</b>\n⏱ <b>Очікуваний час доставки:</b> {est_time}"
 
         try:
             if original_msg.photo or original_msg.caption is not None:
@@ -159,7 +214,7 @@ def process_delivery_time(message, order_id, original_msg):
                     message_id=original_msg.message_id,
                     caption=current_caption + status_text,
                     parse_mode='HTML',
-                    reply_markup=None  # видаляємо кнопки після прийняття
+                    reply_markup=None
                 )
             else:
                 current_text = original_msg.text or ""
