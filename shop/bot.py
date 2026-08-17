@@ -1,16 +1,18 @@
+
 import os
 import sys
 import json
 import django
 
 
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 
 
-if not apps.ready:
+try:
     django.setup()
+except RuntimeError:
+    pass
 
 import gspread
 from google.oauth2.service_account import Credentials
