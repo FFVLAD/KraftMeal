@@ -25,7 +25,6 @@ bot = TeleBot(TOKEN)
 
 
 def append_order_to_google_sheet(order, est_time):
-    print(f"🚀 [GSHEETS] Спроба запису замовлення #{order.id}...")
     try:
         scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
@@ -35,11 +34,9 @@ def append_order_to_google_sheet(order, est_time):
 
         env_creds = os.environ.get('GOOGLE_CREDENTIALS_JSON')
         if env_creds:
-            print("🔑 [GSHEETS] Авторизація через GOOGLE_CREDENTIALS_JSON")
             creds_dict = json.loads(env_creds)
             creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
         else:
-            print("📁 [GSHEETS] Авторизація через локальний credentials.json")
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             creds_path = os.path.join(base_dir, 'credentials.json')
             if not os.path.exists(creds_path):
@@ -47,25 +44,17 @@ def append_order_to_google_sheet(order, est_time):
             creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
 
         client = gspread.authorize(creds)
-
-
-        spreadsheet_id = "1A6l5t-sMklrhORoV7K-U73OFpa7EQZLseSz0r5jkNgs"
-        spreadsheet = client.open_by_key(spreadsheet_id)
-
-
-        sheet = spreadsheet.get_worksheet(0)
-
+        spreadsheet = client.open_by_key("1A6l5t-sMklrhORoV7K-U73OFpa7EQZLseSz0r5jkNgs")
+        sheet = spreadsheet.worksheet("KraftMeal")
 
         items_list = [f"{item.product.title} (x{item.quantity})" for item in order.items.all()]
         items_text = ", ".join(items_list)
-
 
         if order.payment_method == 'card':
             card_title = order.selected_card.title if getattr(order, 'selected_card', None) else 'Не вказано'
             pay_text = f"Картка ({card_title})"
         else:
             pay_text = "Готівка"
-
 
         row = [
             order.id,
@@ -82,10 +71,12 @@ def append_order_to_google_sheet(order, est_time):
         ]
 
         sheet.append_row(row)
-        print(f"✅ [GSHEETS] Замовлення #{order.id} успішно додано у вкладку '{sheet.title}'!")
+        return True, "OK"
     except Exception as e:
-        print(f"❌ [GSHEETS ERROR] Не вдалося записати замовлення #{order.id}: {type(e).__name__} - {e}")
+        error_details = f"{type(e).__name__}: {e}"
+        print(f"❌ [GSHEETS ERROR]: {error_details}")
         print(traceback.format_exc())
+        return False, error_details
 
 
 def format_order_text(order):
@@ -229,8 +220,8 @@ def process_delivery_time(message, order_id, original_msg):
         order.cancel_reason = None
         order.save()
 
-        # Відправка даних у Google Sheets
-        append_order_to_google_sheet(order, est_time)
+
+        success, sheet_err = append_order_to_google_sheet(order, est_time)
 
         status_text = f"\n\n🟢 <b>СТАТУС: ПРИЙНЯТО</b>\n⏱ <b>Очікуваний час доставки:</b> {est_time}"
 
@@ -256,8 +247,10 @@ def process_delivery_time(message, order_id, original_msg):
         except Exception as edit_err:
             print(f"Помилка оновлення тексту замовлення: {edit_err}")
 
-        bot.send_message(message.chat.id,
-                         f"✅ Замовлення #{order_id} підтверджено! Час доставки ({est_time}) збережено.")
+        if success:
+            bot.send_message(message.chat.id, f"✅ Замовлення #{order_id} підтверджено та успішно записано в Google Таблицю!")
+        else:
+            bot.send_message(message.chat.id, f"⚠️ Замовлення #{order_id} підтверджено, але виникла ПОМИЛКА запису в Google Таблицю:\n<code>{sheet_err}</code>", parse_mode="HTML")
 
     except Order.DoesNotExist:
         bot.send_message(message.chat.id, "❌ Замовлення не знайдено.")
