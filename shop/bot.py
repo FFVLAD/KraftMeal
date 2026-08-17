@@ -1,5 +1,7 @@
 import os
 import sys
+import json
+import django
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -15,8 +17,6 @@ from shop.models import Order, UserProfile, StoreSettings
 TOKEN = os.environ.get('BOT_TOKEN', '8605046875:AAEIdjsRa6_CbUq2VgSSfqjegYKR_YhLGR4')
 bot = TeleBot(TOKEN)
 
-admin_actions = {}
-
 
 def append_order_to_google_sheet(order, est_time):
     try:
@@ -26,13 +26,17 @@ def append_order_to_google_sheet(order, est_time):
         ]
 
 
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        creds_path = os.path.join(base_dir, 'credentials.json')
+        env_creds = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+        if env_creds:
+            creds_dict = json.loads(env_creds)
+            creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+        else:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            creds_path = os.path.join(base_dir, 'credentials.json')
+            if not os.path.exists(creds_path):
+                creds_path = 'credentials.json'
+            creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
 
-        if not os.path.exists(creds_path):
-            creds_path = 'credentials.json'
-
-        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
         client = gspread.authorize(creds)
 
 
@@ -45,11 +49,10 @@ def append_order_to_google_sheet(order, est_time):
 
 
         if order.payment_method == 'card':
-            card_title = order.selected_card.title if order.selected_card else 'Не вказано'
+            card_title = order.selected_card.title if getattr(order, 'selected_card', None) else 'Не вказано'
             pay_text = f"Картка ({card_title})"
         else:
             pay_text = "Готівка"
-
 
         row = [
             order.id,
@@ -82,7 +85,7 @@ def format_order_text(order):
     regular_badge = "⭐ Постійний клієнт" if getattr(profile, 'is_regular_customer', False) else "👤 Клієнт"
 
     if order.payment_method == 'card':
-        card_info = f"{order.selected_card.title} ({order.selected_card.card_number})" if order.selected_card else "Не вказано"
+        card_info = f"{order.selected_card.title} ({order.selected_card.card_number})" if getattr(order, 'selected_card', None) else "Не вказано"
         pay_badge = f"💳 Карткою на: <b>{card_info}</b>"
     else:
         pay_badge = "💵 Готівкою"
@@ -176,26 +179,31 @@ def handle_photo_receipt(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
-    bot.answer_callback_query(call.id)
+    try:
+        bot.answer_callback_query(call.id)
 
-    if call.data.startswith("confirm_"):
-        order_id = call.data.split("_")[1]
+        if call.data.startswith("confirm_"):
+            order_id = call.data.split("_")[1]
 
-        prompt_msg = bot.send_message(
-            call.message.chat.id,
-            f"⏱ Введіть **орієнтовний час доставки** для замовлення #{order_id} (наприклад: '30-40 хв' або 'до 19:30'):"
-        )
+            prompt_msg = bot.send_message(
+                call.message.chat.id,
+                f"⏱ Введіть **орієнтовний час доставки** для замовлення #{order_id} (наприклад: '30-40 хв' або 'до 19:30'):"
+            )
 
-        bot.register_next_step_handler(prompt_msg, process_delivery_time, order_id, call.message)
+            bot.register_next_step_handler(prompt_msg, process_delivery_time, order_id, call.message)
 
-    elif call.data.startswith("cancel_"):
-        order_id = call.data.split("_")[1]
+        elif call.data.startswith("cancel_"):
+            order_id = call.data.split("_")[1]
 
-        prompt_msg = bot.send_message(
-            call.message.chat.id,
-            f"✍️ Напишіть **причину відмови** для замовлення #{order_id}:"
-        )
-        bot.register_next_step_handler(prompt_msg, process_rejection_reason, order_id, call.message)
+            prompt_msg = bot.send_message(
+                call.message.chat.id,
+                f"✍️ Напишіть **причину відмови** для замовлення #{order_id}:"
+            )
+            bot.register_next_step_handler(prompt_msg, process_rejection_reason, order_id, call.message)
+
+    except Exception as err:
+        print(f"❌ Помилка в callback_handler: {err}")
+        bot.send_message(call.message.chat.id, f"⚠️ Виникла помилка під час обробки натискання: {err}")
 
 
 def process_delivery_time(message, order_id, original_msg):
@@ -239,6 +247,9 @@ def process_delivery_time(message, order_id, original_msg):
 
     except Order.DoesNotExist:
         bot.send_message(message.chat.id, "❌ Замовлення не знайдено.")
+    except Exception as e:
+        print(f"Помилка під час підтвердження замовлення: {e}")
+        bot.send_message(message.chat.id, f"⚠️ Помилка: {e}")
 
 
 def process_rejection_reason(message, order_id, original_msg):
@@ -278,6 +289,9 @@ def process_rejection_reason(message, order_id, original_msg):
 
     except Order.DoesNotExist:
         bot.send_message(message.chat.id, "❌ Замовлення не знайдено.")
+    except Exception as e:
+        print(f"Помилка під час відхилення замовлення: {e}")
+        bot.send_message(message.chat.id, f"⚠️ Помилка: {e}")
 
 
 def run_bot():
