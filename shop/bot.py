@@ -34,13 +34,21 @@ def append_order_to_google_sheet(order, est_time):
 
         env_creds = os.environ.get('GOOGLE_CREDENTIALS_JSON')
         if env_creds:
-            creds_dict = json.loads(env_creds)
+            env_creds_clean = env_creds.strip()
+
+            if (env_creds_clean.startswith("'") and env_creds_clean.endswith("'")) or \
+                    (env_creds_clean.startswith('"') and env_creds_clean.endswith('"')):
+                env_creds_clean = env_creds_clean[1:-1]
+
+            creds_dict = json.loads(env_creds_clean)
             creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
         else:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             creds_path = os.path.join(base_dir, 'credentials.json')
             if not os.path.exists(creds_path):
-                creds_path = 'credentials.json'
+                raise FileNotFoundError(
+                    "Змінна GOOGLE_CREDENTIALS_JSON відсутня в Render Environment, а локальний файл credentials.json не знайдено."
+                )
             creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
 
         client = gspread.authorize(creds)
@@ -90,7 +98,9 @@ def format_order_text(order):
     regular_badge = "⭐ Постійний клієнт" if getattr(profile, 'is_regular_customer', False) else "👤 Клієнт"
 
     if order.payment_method == 'card':
-        card_info = f"{order.selected_card.title} ({order.selected_card.card_number})" if getattr(order, 'selected_card', None) else "Не вказано"
+        card_info = f"{order.selected_card.title} ({order.selected_card.card_number})" if getattr(order,
+                                                                                                  'selected_card',
+                                                                                                  None) else "Не вказано"
         pay_badge = f"💳 Карткою на: <b>{card_info}</b>"
     else:
         pay_badge = "💵 Готівкою"
@@ -248,9 +258,12 @@ def process_delivery_time(message, order_id, original_msg):
             print(f"Помилка оновлення тексту замовлення: {edit_err}")
 
         if success:
-            bot.send_message(message.chat.id, f"✅ Замовлення #{order_id} підтверджено та успішно записано в Google Таблицю!")
+            bot.send_message(message.chat.id,
+                             f"✅ Замовлення #{order_id} підтверджено та успішно записано в Google Таблицю!")
         else:
-            bot.send_message(message.chat.id, f"⚠️ Замовлення #{order_id} підтверджено, але виникла ПОМИЛКА запису в Google Таблицю:\n<code>{sheet_err}</code>", parse_mode="HTML")
+            bot.send_message(message.chat.id,
+                             f"⚠️ Замовлення #{order_id} підтверджено, але виникла ПОМИЛКА запису в Google Таблицю:\n<code>{sheet_err}</code>",
+                             parse_mode="HTML")
 
     except Order.DoesNotExist:
         bot.send_message(message.chat.id, "❌ Замовлення не знайдено.")
