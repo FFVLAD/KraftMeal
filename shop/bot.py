@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import traceback
 import django
 
 
@@ -24,6 +25,7 @@ bot = TeleBot(TOKEN)
 
 
 def append_order_to_google_sheet(order, est_time):
+    print(f"🚀 [GSHEETS] Спроба запису замовлення #{order.id}...")
     try:
         scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
@@ -33,9 +35,11 @@ def append_order_to_google_sheet(order, est_time):
 
         env_creds = os.environ.get('GOOGLE_CREDENTIALS_JSON')
         if env_creds:
+            print("🔑 [GSHEETS] Авторизація через GOOGLE_CREDENTIALS_JSON")
             creds_dict = json.loads(env_creds)
             creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
         else:
+            print("📁 [GSHEETS] Авторизація через локальний credentials.json")
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             creds_path = os.path.join(base_dir, 'credentials.json')
             if not os.path.exists(creds_path):
@@ -49,7 +53,7 @@ def append_order_to_google_sheet(order, est_time):
         spreadsheet = client.open_by_key(spreadsheet_id)
 
 
-        sheet = spreadsheet.worksheet("KraftMeal")
+        sheet = spreadsheet.get_worksheet(0)
 
 
         items_list = [f"{item.product.title} (x{item.quantity})" for item in order.items.all()]
@@ -78,9 +82,10 @@ def append_order_to_google_sheet(order, est_time):
         ]
 
         sheet.append_row(row)
-        print(f"✅ Замовлення #{order.id} успішно додано в Google Sheets (вкладка KraftMeal)!")
+        print(f"✅ [GSHEETS] Замовлення #{order.id} успішно додано у вкладку '{sheet.title}'!")
     except Exception as e:
-        print(f"❌ Детальна помилка запису в Google Sheets: {type(e).__name__} - {e}")
+        print(f"❌ [GSHEETS ERROR] Не вдалося записати замовлення #{order.id}: {type(e).__name__} - {e}")
+        print(traceback.format_exc())
 
 
 def format_order_text(order):
@@ -224,7 +229,7 @@ def process_delivery_time(message, order_id, original_msg):
         order.cancel_reason = None
         order.save()
 
-
+        # Відправка даних у Google Sheets
         append_order_to_google_sheet(order, est_time)
 
         status_text = f"\n\n🟢 <b>СТАТУС: ПРИЙНЯТО</b>\n⏱ <b>Очікуваний час доставки:</b> {est_time}"
