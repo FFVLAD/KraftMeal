@@ -6,7 +6,9 @@ import django
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
-django.setup()
+
+if not django.apps.apps.ready:
+    django.setup()
 
 import gspread
 from google.oauth2.service_account import Credentials
