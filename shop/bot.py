@@ -1,4 +1,3 @@
-
 import os
 import sys
 import json
@@ -47,7 +46,10 @@ def append_order_to_google_sheet(order, est_time):
 
 
         spreadsheet_id = "1A6l5t-sMklrhORoV7K-U73OFpa7EQZLseSz0r5jkNgs"
-        sheet = client.open_by_key(spreadsheet_id).sheet1
+        spreadsheet = client.open_by_key(spreadsheet_id)
+
+
+        sheet = spreadsheet.worksheet("KraftMeal")
 
 
         items_list = [f"{item.product.title} (x{item.quantity})" for item in order.items.all()]
@@ -59,6 +61,7 @@ def append_order_to_google_sheet(order, est_time):
             pay_text = f"Картка ({card_title})"
         else:
             pay_text = "Готівка"
+
 
         row = [
             order.id,
@@ -75,9 +78,9 @@ def append_order_to_google_sheet(order, est_time):
         ]
 
         sheet.append_row(row)
-        print(f"✅ Замовлення #{order.id} успішно додано в Google Sheets!")
+        print(f"✅ Замовлення #{order.id} успішно додано в Google Sheets (вкладка KraftMeal)!")
     except Exception as e:
-        print(f"❌ Помилка запису в Google Sheets: {e}")
+        print(f"❌ Детальна помилка запису в Google Sheets: {type(e).__name__} - {e}")
 
 
 def format_order_text(order):
