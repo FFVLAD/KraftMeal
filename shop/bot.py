@@ -4,10 +4,12 @@ import json
 import django
 
 
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 
-if not django.apps.apps.ready:
+
+if not apps.ready:
     django.setup()
 
 import gspread
